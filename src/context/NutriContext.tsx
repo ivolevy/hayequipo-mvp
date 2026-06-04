@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from './AuthContext';
 
 export interface NutriObjective {
   id: string;
@@ -66,12 +67,21 @@ const initialPlayerPlans: Record<string, PlayerSpecificPlan> = {
 };
 
 export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const activeTeamId = user?.activeTeamId;
   const [objectives, setObjectives] = useState<NutriObjective[]>(initialObjectives);
   const [recommendations, setRecommendations] = useState<MealRecommendation[]>(initialRecommendations);
   const [playerPlans, setPlayerPlans] = useState<Record<string, PlayerSpecificPlan>>(initialPlayerPlans);
   const [loading, setLoading] = useState(true);
 
   const fetchNutriData = useCallback(async () => {
+    if (!activeTeamId) {
+      setObjectives(initialObjectives);
+      setRecommendations(initialRecommendations);
+      setPlayerPlans({});
+      setLoading(false);
+      return;
+    }
     try {
       // 1. Cargar objetivos
       const { data: dbObjectives, error: objError } = await supabase
@@ -89,8 +99,9 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // 3. Cargar perfiles de jugadores para armar planes específicos
       const { data: dbProfiles, error: profError } = await supabase
-        .from('hayequipo_profiles')
+        .from('hayequipo_squad')
         .select('id, nutrition_plan, created_at')
+        .eq('team_id', activeTeamId)
         .eq('role', 'jugador');
 
       if (profError) throw profError;
@@ -132,7 +143,7 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTeamId]);
 
   useEffect(() => {
     fetchNutriData();

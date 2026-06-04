@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Player, players as initialPlayers } from '@/data/players';
+import { useAuth } from './AuthContext';
 
 interface PlayerContextType {
   players: Player[];
@@ -11,14 +12,22 @@ interface PlayerContextType {
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const activeTeamId = user?.activeTeamId;
   const [playersList, setPlayersList] = useState<Player[]>(initialPlayers);
   const [loading, setLoading] = useState(true);
 
   const fetchPlayers = useCallback(async () => {
+    if (!activeTeamId) {
+      setPlayersList([]);
+      setLoading(false);
+      return;
+    }
     try {
       const { data: dbProfiles, error } = await supabase
-        .from('hayequipo_profiles')
+        .from('hayequipo_squad')
         .select('*')
+        .eq('team_id', activeTeamId)
         .eq('role', 'jugador');
 
       if (error) throw error;
@@ -49,7 +58,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTeamId]);
 
   useEffect(() => {
     fetchPlayers();

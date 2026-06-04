@@ -60,7 +60,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, title }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, switchTeam } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -79,6 +79,11 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
             <h2 className="font-display text-xl tracking-tight text-white leading-none mb-1 uppercase">
               HAY <span className="text-emerald-200">EQUIPO</span>
             </h2>
+            {user.activeTeamName && (
+              <p className="text-[10px] font-black text-emerald-100 uppercase tracking-widest mt-1 opacity-80 truncate">
+                {user.activeTeamName}
+              </p>
+            )}
           </div>
           <nav className="space-y-3">
             {navItems.map((item) => (
@@ -103,7 +108,7 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
         </div>
         
         <div className="pt-8 border-t border-white/10">
-          <Link to="/perfil" className="flex items-center gap-4 px-2 mb-8 group hover:bg-white/5 p-2 rounded-2xl transition-all">
+          <Link to="/perfil" className="flex items-center gap-4 px-2 mb-4 group hover:bg-white/5 p-2 rounded-2xl transition-all">
             <div
               className="w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-bold shadow-xl border-2 border-white/20 transition-transform group-hover:scale-105"
               style={{ backgroundColor: user.color, color: '#FFF' }}
@@ -116,8 +121,15 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
             </div>
           </Link>
           <button
+            onClick={switchTeam}
+            className="flex items-center gap-4 px-5 py-3.5 text-xs font-black text-emerald-50 hover:text-white transition-all w-full rounded-2xl hover:bg-white/10 uppercase tracking-widest mb-1.5"
+          >
+            <Users className="w-5 h-5" aria-hidden="true" />
+            <span>Cambiar Equipo</span>
+          </button>
+          <button
             onClick={logout}
-            className="flex items-center gap-4 px-5 py-4 text-xs font-black text-emerald-50 hover:text-white transition-all w-full rounded-2xl hover:bg-white/10 uppercase tracking-widest"
+            className="flex items-center gap-4 px-5 py-3.5 text-xs font-black text-emerald-50 hover:text-white transition-all w-full rounded-2xl hover:bg-white/10 uppercase tracking-widest"
           >
             <LogOut className="w-5 h-5" aria-hidden="true" />
             <span>Cerrar Sesión</span>
@@ -127,16 +139,28 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
 
       {/* Mobile top bar */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-24 bg-white/80 backdrop-blur-2xl border-b border-slate-50 flex items-center justify-between px-8 z-[999] shadow-sm">
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0 mr-4">
           <h2 className="font-display text-lg tracking-tight text-slate-900 leading-none uppercase">HAY <span className="text-emerald-600">EQUIPO</span></h2>
+          {user.activeTeamName && (
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mt-1 truncate">{user.activeTeamName}</span>
+          )}
         </div>
-        <Link
-          to="/perfil"
-          className="w-12 h-12 rounded-[1.25rem] flex items-center justify-center text-xs font-bold shadow-lg shadow-black/5 active:scale-95 transition-transform"
-          style={{ backgroundColor: user.color, color: '#FFF' }}
-        >
-          {user.initials}
-        </Link>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={switchTeam}
+            className="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 transition-all flex items-center justify-center text-slate-500 shadow-sm border border-slate-100"
+            aria-label="Cambiar Equipo"
+          >
+            <Users className="w-4.5 h-4.5" />
+          </button>
+          <Link
+            to="/perfil"
+            className="w-12 h-12 rounded-[1.25rem] flex items-center justify-center text-xs font-bold shadow-lg shadow-black/5 active:scale-95 transition-transform"
+            style={{ backgroundColor: user.color, color: '#FFF' }}
+          >
+            {user.initials}
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col h-full overflow-hidden pt-24 pb-28 md:pt-0 md:pb-0">

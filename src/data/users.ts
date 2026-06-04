@@ -1,4 +1,4 @@
-export type UserRole = 'dt' | 'jugador' | 'pf' | 'nutri';
+export type UserRole = 'dt' | 'jugador' | 'pf' | 'nutri' | 'admin';
 
 export interface DemoUser {
   id: string;

@@ -7,7 +7,7 @@ import { usePlayers } from '@/context/PlayerContext';
 import { Player } from '@/data/players';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarDays, MapPin, Shield, Users, Trash2, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { CalendarDays, MapPin, Shield, Users, Trash2, ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 import FootballPitch from '@/components/FootballPitch';
 import { toast } from 'sonner';
@@ -835,9 +835,12 @@ const PartidoDetalle = () => {
                           <span className="w-1 h-1 rounded-full bg-slate-200" />
                           <span className={`text-[9px] font-black uppercase tracking-widest ${
                             displayStatus === 'confirmado' ? 'text-emerald-500' : 
-                            displayStatus === 'pendiente' ? 'text-amber-500' : 'text-rose-500'
+                            (isPast ? 'text-rose-500' : (displayStatus === 'pendiente' ? 'text-amber-500' : 'text-rose-500'))
                           }`}>
-                            {statusLabels[displayStatus]}
+                            {isPast 
+                              ? (displayStatus === 'confirmado' ? 'Asistido' : 'No Asistido')
+                              : statusLabels[displayStatus]
+                            }
                           </span>
                           {displayStatus === 'confirmado' && (
                             <>

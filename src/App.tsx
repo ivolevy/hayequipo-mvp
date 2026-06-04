@@ -32,6 +32,7 @@ import NutriObjetivos from "./pages/nutri/NutriObjetivos";
 import NutriRecomendaciones from "./pages/nutri/NutriRecomendaciones";
 
 import Profile from "./pages/shared/Profile";
+import SeleccionarEquipo from "./pages/shared/SeleccionarEquipo";
 
 import NotFound from "./pages/NotFound";
 
@@ -49,11 +50,19 @@ const AppRoutes = () => {
       return;
     }
 
+    if (!user.activeTeamId) {
+      if (location.pathname !== "/seleccionar-equipo") {
+        navigate("/seleccionar-equipo", { replace: true });
+      }
+      return;
+    }
+
     const homeRoute = `/${user.role}`;
     const isAllowedRoute = 
       location.pathname === homeRoute || 
       location.pathname.startsWith(`${homeRoute}/`) ||
-      location.pathname === '/perfil';
+      location.pathname === '/perfil' ||
+      location.pathname === '/seleccionar-equipo';
 
     if (!isAllowedRoute) {
       navigate(homeRoute, { replace: true });
@@ -70,12 +79,22 @@ const AppRoutes = () => {
 
   if (!user) return <Login />;
 
+  if (!user.activeTeamId) {
+    return (
+      <Routes>
+        <Route path="/seleccionar-equipo" element={<SeleccionarEquipo />} />
+        <Route path="*" element={<Navigate to="/seleccionar-equipo" replace />} />
+      </Routes>
+    );
+  }
+
   const homeRoute = `/${user.role}`;
 
   return (
     <Routes>
       <Route path="/" element={<Navigate to={homeRoute} replace />} />
       <Route path="/perfil" element={<Profile />} />
+      <Route path="/seleccionar-equipo" element={<SeleccionarEquipo />} />
 
       {/* DT (now with match management) */}
       <Route path="/dt" element={<DTDashboard />} />
