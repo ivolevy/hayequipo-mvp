@@ -27,12 +27,7 @@ interface NavItem {
 const navByRole: Record<UserRole, NavItem[]> = {
   admin: [
     { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
-    { label: 'Crear partido', to: '/admin/crear-partido', icon: PlusCircle, hideOnMobile: true },
-    { label: 'Partidos', to: '/admin/partidos', icon: ClipboardList },
-    { label: 'Avisos', to: '/admin/avisos', icon: Megaphone },
     { label: 'Plantel & Staff', to: '/admin/plantel', icon: Users },
-    { label: 'Estado Físico', to: '/admin/salud', icon: Activity, hideOnMobile: true },
-    { label: 'Nutrición', to: '/admin/objetivos-nutri', icon: Apple, hideOnMobile: true },
   ],
   dt: [
     { label: 'Dashboard', to: '/dt', icon: LayoutDashboard },

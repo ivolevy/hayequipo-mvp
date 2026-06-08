@@ -20,6 +20,7 @@ const roleIcons = {
   pf: Activity,
   nutri: Apple,
   jugador: User,
+  admin: Shield,
 };
 
 const roleLabels = {
@@ -27,6 +28,7 @@ const roleLabels = {
   pf: 'Preparador Físico',
   nutri: 'Nutricionista',
   jugador: 'Jugador',
+  admin: 'Administrador',
 };
 
 const roleColors = {
@@ -34,6 +36,7 @@ const roleColors = {
   pf: 'bg-purple-50 text-purple-600 border border-purple-100',
   nutri: 'bg-amber-50 text-amber-600 border border-amber-100',
   jugador: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
+  admin: 'bg-slate-900 text-white border border-slate-950',
 };
 
 const GestionPlantel = () => {

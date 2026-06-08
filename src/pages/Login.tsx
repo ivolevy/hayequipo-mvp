@@ -141,7 +141,7 @@ const Login = () => {
         email,
         password,
         fullName,
-        'admin'
+        'jugador'
       );
 
       if (sessionRequired) {
@@ -166,7 +166,7 @@ const Login = () => {
         email,
         otpToken,
         fullName,
-        'admin'
+        'jugador'
       );
       toast.success('¡Email verificado! Cuenta creada correctamente');
     } catch (err: any) {
