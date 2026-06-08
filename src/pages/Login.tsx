@@ -157,8 +157,8 @@ const Login = () => {
 
   const handleFormVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpToken.length !== 6) {
-      toast.error('Ingresá el código de 6 dígitos');
+    if (otpToken.length !== 8) {
+      toast.error('Ingresá el código de 8 dígitos');
       return;
     }
     try {
@@ -359,7 +359,7 @@ const Login = () => {
                 <form onSubmit={handleFormVerify} className="space-y-6">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <InputOTP
-                      maxLength={6}
+                      maxLength={8}
                       value={otpToken}
                       onChange={setOtpToken}
                     >
@@ -370,6 +370,8 @@ const Login = () => {
                         <InputOTPSlot index={3} />
                         <InputOTPSlot index={4} />
                         <InputOTPSlot index={5} />
+                        <InputOTPSlot index={6} />
+                        <InputOTPSlot index={7} />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
