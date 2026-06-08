@@ -14,12 +14,6 @@ const roleIcons: Record<UserRole, React.ComponentType<{ className?: string }>> =
   admin: Shield,
 };
 
-const registerRoles = [
-  { value: 'dt', label: 'Director Técnico', icon: Shield, color: '#3B82F6' },
-  { value: 'pf', label: 'Prep. Físico', icon: Activity, color: '#8B5CF6' },
-  { value: 'nutri', label: 'Nutricionista', icon: Apple, color: '#F59E0B' },
-  { value: 'jugador', label: 'Jugador', icon: User, color: '#10B981' }
-];
 
 const getRoleLabel = (role: string) => {
   switch (role) {
@@ -65,9 +59,6 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('jugador');
-  const [number, setNumber] = useState('');
-  const [position, setPosition] = useState('');
   const [otpToken, setOtpToken] = useState('');
 
   // Roster profiles loaded dynamically
@@ -150,8 +141,7 @@ const Login = () => {
         email,
         password,
         fullName,
-        selectedRole,
-        selectedRole === 'jugador' ? { number: Number(number) || undefined, position } : undefined
+        'jugador'
       );
 
       if (sessionRequired) {
@@ -176,8 +166,7 @@ const Login = () => {
         email,
         otpToken,
         fullName,
-        selectedRole,
-        selectedRole === 'jugador' ? { number: Number(number) || undefined, position } : undefined
+        'jugador'
       );
       toast.success('¡Email verificado! Cuenta creada correctamente');
     } catch (err: any) {
@@ -341,69 +330,6 @@ const Login = () => {
                     />
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1 block mb-1">
-                    Seleccionar Rol
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {registerRoles.map(r => {
-                      const Icon = r.icon;
-                      const isSelected = selectedRole === r.value;
-                      return (
-                        <button
-                          key={r.value}
-                          type="button"
-                          onClick={() => setSelectedRole(r.value as UserRole)}
-                          className={`p-3 text-left border rounded-xl flex items-center gap-2.5 transition-all ${
-                            isSelected
-                              ? 'border-emerald-600 bg-emerald-50/50 shadow-sm'
-                              : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div
-                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-white"
-                            style={{ backgroundColor: r.color }}
-                          >
-                            <Icon className="w-3.5 h-3.5" />
-                          </div>
-                          <div>
-                            <div className="text-[10px] font-bold text-slate-800 uppercase tracking-tight truncate">
-                              {r.label}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {selectedRole === 'jugador' && (
-                  <div className="grid grid-cols-2 gap-3 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Camiseta</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="99"
-                        placeholder="Ej: 10"
-                        value={number}
-                        onChange={e => setNumber(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Posición</label>
-                      <input
-                        type="text"
-                        placeholder="Ej: Delantero"
-                        value={position}
-                        onChange={e => setPosition(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
-                      />
-                    </div>
-                  </div>
-                )}
 
                 <button
                   type="submit"
