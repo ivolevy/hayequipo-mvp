@@ -42,24 +42,28 @@ const getInitials = (name: string) => {
     .substring(0, 2);
 };
 
-const Login = () => {
   const { 
     login, 
     loginWithCredentials, 
     signUpWithCredentials, 
     verifyOtpForSignUp, 
+    sendPasswordResetEmail,
+    resetPasswordWithOtp,
     isLoggingIn, 
     loginMessage 
   } = useAuth();
   
   // Navigation & authentication modes
-  const [mode, setMode] = useState<'login' | 'register' | 'verify'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'verify' | 'forgot' | 'reset_password'>('login');
 
   // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [otpToken, setOtpToken] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [resetPasswordOtpToken, setResetPasswordOtpToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   // Roster profiles loaded dynamically
   const [dbMembers, setDbMembers] = useState<DemoUser[]>([]);
@@ -107,6 +111,15 @@ const Login = () => {
     fetchRoster();
   }, []);
 
+  // Load remembered email
+  useEffect(() => {
+    const remembered = localStorage.getItem('hay_equipo_remembered_email');
+    if (remembered) {
+      setEmail(remembered);
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleShortcutLogin = (user: DemoUser) => {
     if (isLoggingIn) return;
     login(user);
@@ -120,9 +133,47 @@ const Login = () => {
     }
     try {
       await loginWithCredentials(email, password);
+      if (rememberMe) {
+        localStorage.setItem('hay_equipo_remembered_email', email);
+      } else {
+        localStorage.removeItem('hay_equipo_remembered_email');
+      }
       toast.success('Sesión iniciada con éxito');
     } catch (err: any) {
       toast.error(err.message || 'Error al iniciar sesión');
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error('Ingresá tu correo electrónico');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(email);
+      toast.success('Código de recuperación enviado por correo');
+      setMode('reset_password');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al enviar el correo de recuperación');
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordOtpToken.trim() || !newPassword) {
+      toast.error('Completá todos los campos');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    try {
+      await resetPasswordWithOtp(email, resetPasswordOtpToken.trim(), newPassword);
+      toast.success('¡Contraseña restablecida correctamente!');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al restablecer la contraseña');
     }
   };
 
@@ -215,7 +266,7 @@ const Login = () => {
 
           <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 px-4 py-8 sm:px-6 md:p-10 space-y-8">
             {/* Toggle Switch between Login and Register */}
-            {mode !== 'verify' && (
+            {mode !== 'verify' && mode !== 'forgot' && mode !== 'reset_password' && (
               <div className="grid grid-cols-2 p-1 bg-slate-50 border border-slate-100/80 rounded-2xl relative">
                 <button
                   type="button"
@@ -271,6 +322,25 @@ const Login = () => {
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
                     />
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between px-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={e => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500/20 border-slate-200 cursor-pointer"
+                    />
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Recordar correo</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setMode('forgot')}
+                    className="text-[9px] font-black text-slate-400 hover:text-slate-650 transition-colors uppercase tracking-wider"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
                 </div>
 
                 <button
@@ -402,6 +472,128 @@ const Login = () => {
                         REENVIAR CÓDIGO
                       </button>
                     </div>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Render Forgot Password Form */}
+            {mode === 'forgot' && (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h3 className="font-display text-lg tracking-tight text-slate-900 uppercase">
+                    Recuperar Contraseña
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
+                    Ingresá tu correo electrónico para recibir un código de recuperación.
+                  </p>
+                </div>
+
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                      <input
+                        type="email"
+                        required
+                        placeholder="correo@ejemplo.com"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
+                  >
+                    <span>ENVIAR CÓDIGO</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex justify-start px-1">
+                    <button
+                      type="button"
+                      onClick={() => setMode('login')}
+                      className="text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      VOLVER AL INICIO
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Render Reset Password with OTP Form */}
+            {mode === 'reset_password' && (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h3 className="font-display text-lg tracking-tight text-slate-900 uppercase">
+                    Nueva Contraseña
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
+                    Ingresá el código de 8 dígitos enviado a <strong className="text-slate-600">{email}</strong> y tu nueva contraseña.
+                  </p>
+                </div>
+
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Código de Seguridad</label>
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <InputOTP
+                        maxLength={8}
+                        value={resetPasswordOtpToken}
+                        onChange={setResetPasswordOtpToken}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                          <InputOTPSlot index={6} />
+                          <InputOTPSlot index={7} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Nueva Contraseña</label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                      <input
+                        type="password"
+                        required
+                        placeholder="Mínimo 6 caracteres"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
+                  >
+                    <span>RESTABLECER Y ENTRAR</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex justify-start px-1">
+                    <button
+                      type="button"
+                      onClick={() => setMode('login')}
+                      className="text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      VOLVER AL INICIO
+                    </button>
                   </div>
                 </form>
               </div>

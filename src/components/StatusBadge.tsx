@@ -1,9 +1,9 @@
 import { ConvocationStatus } from '@/context/MatchContext';
 
-const statusConfig: Record<ConvocationStatus, { label: string; dotClass: string }> = {
-  confirmado: { label: 'Confirmados', dotClass: 'bg-status-green' },
-  pendiente: { label: 'Pendientes', dotClass: 'bg-status-yellow' },
-  rechazado: { label: 'Rechazados', dotClass: 'bg-status-red' },
+const statusConfig: Record<ConvocationStatus, { label: string; textClass: string }> = {
+  confirmado: { label: 'Confirmados', textClass: 'text-emerald-600' },
+  pendiente: { label: 'Pendientes', textClass: 'text-slate-400' },
+  rechazado: { label: 'Rechazados', textClass: 'text-rose-500' },
 };
 
 interface StatusBadgeProps {
@@ -14,9 +14,8 @@ interface StatusBadgeProps {
 const StatusBadge = ({ status, count }: StatusBadgeProps) => {
   const config = statusConfig[status];
   return (
-    <span className="flex items-center gap-1.5">
-      <span className={`w-2 h-2 rounded-full ${config.dotClass}`} />
-      <span className="text-muted-foreground">
+    <span className="flex items-center">
+      <span className={`text-[9px] font-black uppercase tracking-widest ${config.textClass}`}>
         {count} {config.label.toLowerCase()}
       </span>
     </span>

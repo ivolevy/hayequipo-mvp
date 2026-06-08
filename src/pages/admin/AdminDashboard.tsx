@@ -6,7 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useNotices } from '@/context/NoticeContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CalendarDays, MapPin, Users, ChevronRight, Megaphone, Shield, ArrowRight } from 'lucide-react';
+import { CalendarDays, MapPin, Users, ChevronRight, Megaphone } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { matches } = useMatches();
@@ -20,6 +20,9 @@ const AdminDashboard = () => {
     .slice(0, 3);
 
   const activeTeamId = matches[0]?.team_id || localStorage.getItem('hay_equipo_active_team_id');
+  const activeTeamName = localStorage.getItem('hay_equipo_user') 
+    ? JSON.parse(localStorage.getItem('hay_equipo_user')!).activeTeamName 
+    : 'Mi Equipo';
 
   useEffect(() => {
     const fetchMemberCounts = async () => {
@@ -45,131 +48,153 @@ const AdminDashboard = () => {
   }, [activeTeamId]);
 
   return (
-    <Layout title="Inicio (Administrador)">
-      <div className="content-width px-1 py-2 md:py-8 animate-fade-in max-w-4xl pb-24 space-y-6">
+    <Layout title="">
+      <div className="content-width px-4 py-6 md:py-10 animate-fade-in max-w-4xl pb-24 space-y-8">
         
-        {/* Banner de Bienvenida Admin */}
-        <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 md:p-8 text-white relative overflow-hidden shadow-xl shadow-slate-950/20">
-          <div className="relative z-10 space-y-2">
-            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-emerald-400 bg-emerald-950/60 border border-emerald-900 px-3 py-1 rounded-full">
-              Rol: Administrador 👑
+        {/* Simple Minimal Header */}
+        <div className="border-b border-slate-100 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+            <h1 className="text-2xl font-display font-semibold text-slate-800 uppercase tracking-tight">
+              {activeTeamName}
+            </h1>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Panel de Administración
             </span>
-            <h2 className="font-display text-xl md:text-2xl uppercase tracking-tight">Gestión del Club</h2>
-            <p className="text-[11px] text-slate-300 font-medium leading-relaxed max-w-lg">
-              Bienvenido al panel general. Como administrador, tu función principal es gestionar los miembros y el cuerpo técnico del club, además de supervisar la actividad general del equipo.
-            </p>
-          </div>
-          <div className="absolute right-0 bottom-0 opacity-10 translate-x-6 translate-y-6 pointer-events-none">
-            <Shield className="w-64 h-64 text-white" />
           </div>
         </div>
 
-        {/* Acceso Principal: Gestionar Plantel */}
-        <div className="px-1">
-          <button
-            onClick={() => navigate('/admin/plantel')}
-            className="w-full premium-card p-5 md:p-6 flex items-center justify-between group bg-emerald-600 border-none shadow-lg shadow-emerald-200/40 hover:bg-emerald-700 transition-all active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-left">
-                <div className="font-display text-sm md:text-base tracking-wide uppercase text-white leading-tight">GESTIONAR PLANTEL & STAFF</div>
-                <div className="text-[8px] md:text-[10px] font-black text-emerald-100 uppercase tracking-[0.2em] mt-0.5">
-                  Agregar, editar y remover jugadores o cuerpo técnico
-                </div>
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:translate-x-1 transition-transform">
-              <ArrowRight className="w-4 h-4 text-white" />
-            </div>
-          </button>
-        </div>
-
-        {/* Resumen del Club y Actividad */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-1">
-          <div className="premium-card p-5 bg-white border border-slate-100 flex flex-col justify-center text-center">
-            <span className="text-3xl font-display text-slate-800 leading-none">{memberCounts.total}</span>
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Miembros Totales</span>
-          </div>
-          <div className="premium-card p-5 bg-white border border-slate-100 flex flex-col justify-center text-center">
-            <span className="text-3xl font-display text-slate-800 leading-none">{memberCounts.jugadores}</span>
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Jugadores</span>
-          </div>
-          <div className="premium-card p-5 bg-white border border-slate-100 flex flex-col justify-center text-center">
-            <span className="text-3xl font-display text-slate-800 leading-none">{memberCounts.staff}</span>
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Cuerpo Técnico / Auxiliares</span>
-          </div>
-        </div>
-
-        {/* Vista General de Actividades */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-1">
+        {/* 2-Column Minimal Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           
-          {/* Próximos Partidos */}
-          <div className="space-y-4">
-            <h3 className="font-display text-sm tracking-tight text-slate-900 uppercase">Agenda de Partidos</h3>
-            {nextMatches.length === 0 ? (
-              <div className="premium-card p-8 text-center border-dashed bg-white border-slate-200">
-                <CalendarDays className="w-6 h-6 text-slate-200 mx-auto mb-2" />
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sin partidos programados</p>
+          {/* Left Column: Matches and Announcements */}
+          <div className="md:col-span-8 space-y-8">
+            
+            {/* Próximos Partidos */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-50 pb-2">
+                <h2 className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                  Agenda de Partidos
+                </h2>
+                <Link 
+                  to="/admin/partidos" 
+                  className="text-[9px] font-black text-emerald-600 hover:text-emerald-700 tracking-wider uppercase transition-colors"
+                >
+                  Ver todos
+                </Link>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {nextMatches.map((match) => (
-                  <Link 
-                    key={match.id} 
-                    to={`/admin/partido/${match.id}`}
-                    className="group premium-card p-4 bg-white border border-slate-100 shadow-sm flex items-center justify-between hover:border-emerald-100 transition-all"
-                  >
-                    <div className="min-w-0">
-                      <h4 className="font-display text-xs font-semibold text-slate-800 uppercase group-hover:text-emerald-600 transition-colors truncate">
-                        vs {match.rival}
-                      </h4>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1">
-                        <CalendarDays className="w-3 h-3" />
-                        <span>
-                          {format(new Date(match.date), "d 'de' MMMM, HH:mm'hs'", { locale: es })}
+
+              {nextMatches.length === 0 ? (
+                <div className="py-8 text-center border border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                  <CalendarDays className="w-5 h-5 text-slate-300 mx-auto mb-2" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sin partidos programados</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {nextMatches.map((match) => (
+                    <Link 
+                      key={match.id} 
+                      to={`/admin/partido/${match.id}`}
+                      className="group flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-slate-200 transition-all shadow-sm"
+                    >
+                      <div className="min-w-0 space-y-1">
+                        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-tight group-hover:text-emerald-600 transition-colors truncate">
+                          vs {match.rival}
+                        </h3>
+                        <div className="flex items-center gap-3 text-[10px] text-slate-400 font-medium">
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                            {format(new Date(match.date), "d 'de' MMMM, HH:mm'hs'", { locale: es })}
+                          </span>
+                          {match.venue && (
+                            <span className="flex items-center gap-1 truncate">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" />
+                              {match.venue}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Muro de Avisos */}
+            <div className="space-y-4">
+              <div className="border-b border-slate-50 pb-2">
+                <h2 className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                  Comunicados del Staff
+                </h2>
+              </div>
+
+              {notices.length === 0 ? (
+                <div className="py-8 text-center border border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                  <Megaphone className="w-5 h-5 text-slate-300 mx-auto mb-2" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sin avisos publicados</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {notices.slice(0, 3).map((notice) => (
+                    <div 
+                      key={notice.id} 
+                      className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-slate-700 uppercase truncate">
+                          {notice.title}
+                        </h4>
+                        <span className="text-[8px] font-black text-slate-400 uppercase bg-slate-50 px-2 py-0.5 rounded-full">
+                          {notice.authorRole === 'dt' ? 'DT' : notice.authorRole.toUpperCase()}
                         </span>
                       </div>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">
+                        {notice.content}
+                      </p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                  </Link>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
 
-          {/* Últimos Comunicados */}
-          <div className="space-y-4">
-            <h3 className="font-display text-sm tracking-tight text-slate-900 uppercase">Muro de Avisos</h3>
-            {notices.length === 0 ? (
-              <div className="premium-card p-8 text-center border-dashed bg-white border-slate-200">
-                <Megaphone className="w-6 h-6 text-slate-200 mx-auto mb-2" />
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sin avisos publicados</p>
+          {/* Right Column: Squad Management & Summary */}
+          <div className="md:col-span-4 space-y-6">
+            
+            {/* Squad Overview Card */}
+            <div className="p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
+              <div className="space-y-1">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-tight">Estructura del Club</h3>
+                <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest">
+                  Resumen de miembros registrados
+                </p>
               </div>
-            ) : (
+
               <div className="space-y-3">
-                {notices.slice(0, 3).map((notice) => (
-                  <div 
-                    key={notice.id} 
-                    className="premium-card p-4 bg-white border border-slate-100 shadow-sm space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-display text-xs font-semibold text-slate-800 uppercase truncate">
-                        {notice.title}
-                      </h4>
-                      <span className="text-[8px] font-black text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">
-                        {notice.authorRole === 'dt' ? 'DT' : notice.authorRole.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
-                      {notice.content}
-                    </p>
-                  </div>
-                ))}
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">Plantel</span>
+                  <span className="text-sm font-display text-slate-700 font-bold">{memberCounts.jugadores}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">Staff Técnico</span>
+                  <span className="text-sm font-display text-slate-700 font-bold">{memberCounts.staff}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 font-semibold">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-tight">Total</span>
+                  <span className="text-sm font-display text-slate-800 font-black">{memberCounts.total}</span>
+                </div>
               </div>
-            )}
+
+              <button
+                onClick={() => navigate('/admin/plantel')}
+                className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[9px] tracking-widest uppercase transition-all shadow-md flex items-center justify-center gap-1.5"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Gestionar Plantel</span>
+              </button>
+            </div>
+
           </div>
 
         </div>

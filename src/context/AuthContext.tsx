@@ -30,6 +30,8 @@ interface AuthContextType {
     role: UserRole,
     extra?: { number?: number; position?: string }
   ) => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<void>;
+  resetPasswordWithOtp: (email: string, token: string, newPassword: string) => Promise<void>;
   isLoggingIn: boolean;
   loginMessage: string;
   loading: boolean;
@@ -408,6 +410,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const sendPasswordResetEmail = useCallback(async (email: string) => {
+    setIsLoggingIn(true);
+    setLoginMessage('Enviando correo de recuperación...');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Error sending password reset email:', err);
+      throw err;
+    } finally {
+      setIsLoggingIn(false);
+      setLoginMessage('');
+    }
+  }, []);
+
+  const resetPasswordWithOtp = useCallback(async (email: string, token: string, newPassword: string) => {
+    setIsLoggingIn(true);
+    setLoginMessage('Restableciendo contraseña...');
+    try {
+      // 1. Verify recovery OTP
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'recovery'
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error('No se pudo verificar el código de recuperación.');
+
+      // 2. Update user's password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      // 3. Fetch user profile to log them in successfully
+      await fetchUserProfile(data.user.id, data.user.email || email);
+    } catch (err: any) {
+      console.error('Error resetting password with OTP:', err);
+      throw err;
+    } finally {
+      setIsLoggingIn(false);
+      setLoginMessage('');
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     setUser(null);
     setMemberships([]);
@@ -531,6 +580,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loginWithCredentials,
       signUpWithCredentials,
       verifyOtpForSignUp,
+      sendPasswordResetEmail,
+      resetPasswordWithOtp,
       isLoggingIn, 
       loginMessage,
       loading,
