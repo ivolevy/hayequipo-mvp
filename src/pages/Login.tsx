@@ -213,7 +213,7 @@ const Login = () => {
             </p>
           </div>
 
-          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 p-8 md:p-10 space-y-8">
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 px-4 py-8 sm:px-6 md:p-10 space-y-8">
             {/* Toggle Switch between Login and Register */}
             {mode !== 'verify' && (
               <div className="grid grid-cols-2 p-1 bg-slate-50 border border-slate-100/80 rounded-2xl relative">

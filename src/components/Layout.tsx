@@ -21,21 +21,22 @@ interface NavItem {
   label: string;
   to: string;
   icon: React.ComponentType<{ className?: string }>;
+  hideOnMobile?: boolean;
 }
 
 const navByRole: Record<UserRole, NavItem[]> = {
   admin: [
     { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
-    { label: 'Crear partido', to: '/admin/crear-partido', icon: PlusCircle },
+    { label: 'Crear partido', to: '/admin/crear-partido', icon: PlusCircle, hideOnMobile: true },
     { label: 'Partidos', to: '/admin/partidos', icon: ClipboardList },
     { label: 'Avisos', to: '/admin/avisos', icon: Megaphone },
     { label: 'Plantel & Staff', to: '/admin/plantel', icon: Users },
-    { label: 'Estado Físico', to: '/admin/salud', icon: Activity },
-    { label: 'Nutrición', to: '/admin/objetivos-nutri', icon: Apple },
+    { label: 'Estado Físico', to: '/admin/salud', icon: Activity, hideOnMobile: true },
+    { label: 'Nutrición', to: '/admin/objetivos-nutri', icon: Apple, hideOnMobile: true },
   ],
   dt: [
     { label: 'Dashboard', to: '/dt', icon: LayoutDashboard },
-    { label: 'Crear partido', to: '/dt/crear-partido', icon: PlusCircle },
+    { label: 'Crear partido', to: '/dt/crear-partido', icon: PlusCircle, hideOnMobile: true },
     { label: 'Partidos', to: '/dt/partidos', icon: ClipboardList },
     { label: 'Avisos', to: '/dt/avisos', icon: Megaphone },
     { label: 'Plantel & Staff', to: '/dt/plantel', icon: Users },
@@ -200,7 +201,7 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
       {/* Mobile bottom nav - Adaptive Width */}
       <nav className="md:hidden fixed bottom-8 left-4 right-4 h-20 bg-slate-900/95 backdrop-blur-2xl flex items-center justify-between z-[9999] rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] px-3 max-w-md mx-auto">
         <div className="flex items-center justify-evenly flex-1 min-w-0">
-          {navItems.map((item) => (
+          {navItems.filter(item => !item.hideOnMobile).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
