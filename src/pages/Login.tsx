@@ -689,7 +689,7 @@ const Login = () => {
           </div>
 
           <div className="text-center">
-            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.5em]">HAY EQUIPO MVP · 2026</p>
+            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.5em]">HAY EQUIPO · 2026</p>
           </div>
         </div>
       )}

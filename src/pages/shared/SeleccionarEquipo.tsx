@@ -234,7 +234,7 @@ const SeleccionarEquipo = () => {
 
         {/* Footer Logout */}
         <div className="flex justify-between items-center px-4">
-          <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">HAY EQUIPO MVP</p>
+          <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">HAY EQUIPO</p>
           <button
             onClick={logout}
             className="inline-flex items-center gap-1.5 text-[9px] font-black text-slate-400 hover:text-rose-600 transition-colors uppercase tracking-widest"
