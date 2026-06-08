@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { usePlayers } from './PlayerContext';
+import { useAuth } from './AuthContext';
 
 interface PfContextType {
   updateTrainingPlan: (playerId: string, plan: string) => Promise<void>;
@@ -11,15 +12,19 @@ const PfContext = createContext<PfContextType | undefined>(undefined);
 
 export const PfProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { refreshPlayers } = usePlayers();
+  const { user } = useAuth();
+  const activeTeamId = user?.activeTeamId;
 
   const updateTrainingPlan = useCallback(async (playerId: string, plan: string) => {
+    if (!activeTeamId) throw new Error('No hay un equipo activo seleccionado');
     try {
       const { error } = await supabase
-        .from('hayequipo_profiles')
+        .from('hayequipo_memberships')
         .update({
           training_plan: plan
         })
-        .eq('id', playerId);
+        .eq('profile_id', playerId)
+        .eq('team_id', activeTeamId);
 
       if (error) throw error;
       await refreshPlayers();
@@ -27,17 +32,19 @@ export const PfProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       console.error('Error updating training plan:', error);
       throw error;
     }
-  }, [refreshPlayers]);
+  }, [refreshPlayers, activeTeamId]);
 
   const updateHealthStatus = useCallback(async (playerId: string, status: 'disponible' | 'duda' | 'lesionado', description?: string) => {
+    if (!activeTeamId) throw new Error('No hay un equipo activo seleccionado');
     try {
       const { error } = await supabase
-        .from('hayequipo_profiles')
+        .from('hayequipo_memberships')
         .update({
           health_status: status,
           injury_description: status !== 'disponible' ? description : null
         })
-        .eq('id', playerId);
+        .eq('profile_id', playerId)
+        .eq('team_id', activeTeamId);
 
       if (error) throw error;
       await refreshPlayers();
@@ -45,7 +52,7 @@ export const PfProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       console.error('Error updating health status:', error);
       throw error;
     }
-  }, [refreshPlayers]);
+  }, [refreshPlayers, activeTeamId]);
 
   return (
     <PfContext.Provider value={{ updateTrainingPlan, updateHealthStatus }}>

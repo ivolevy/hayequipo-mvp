@@ -22,6 +22,13 @@ interface AuthContextType {
     fullName: string, 
     role: UserRole, 
     extra?: { number?: number; position?: string }
+  ) => Promise<{ sessionRequired: boolean }>;
+  verifyOtpForSignUp: (
+    email: string,
+    token: string,
+    fullName: string,
+    role: UserRole,
+    extra?: { number?: number; position?: string }
   ) => Promise<void>;
   isLoggingIn: boolean;
   loginMessage: string;
@@ -289,7 +296,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const signUpWithCredentials = useCallback(async (email: string, password: string, fullName: string, role: UserRole, extra?: { number?: number; position?: string }) => {
+  const signUpWithCredentials = useCallback(async (
+    email: string, 
+    password: string, 
+    fullName: string, 
+    role: UserRole, 
+    extra?: { number?: number; position?: string }
+  ): Promise<{ sessionRequired: boolean }> => {
     setIsLoggingIn(true);
     setLoginMessage('Registrando nueva cuenta...');
     try {
@@ -301,13 +314,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       if (!data.user) throw new Error('No se pudo registrar el usuario.');
 
+      // Check if session is established (email confirmation is disabled)
+      if (data.session) {
+        const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+        const { error: profileError } = await supabase
+          .from('hayequipo_profiles')
+          .insert({
+            id: data.user.id,
+            team_id: null, // do not link a default team directly
+            full_name: fullName,
+            email: email,
+            role: role,
+            number: extra?.number || null,
+            position: extra?.position || null,
+            avatar_url: randomColor,
+            health_status: role === 'jugador' ? 'disponible' : null
+          });
+
+        if (profileError) throw profileError;
+        await fetchUserProfile(data.user.id, email);
+        return { sessionRequired: false };
+      }
+
+      // If no session is returned, email confirmation/OTP is required
+      return { sessionRequired: true };
+    } catch (err: any) {
+      console.error('Error signing up:', err);
+      throw err;
+    } finally {
+      setIsLoggingIn(false);
+      setLoginMessage('');
+    }
+  }, []);
+
+  const verifyOtpForSignUp = useCallback(async (
+    email: string,
+    token: string,
+    fullName: string,
+    role: UserRole,
+    extra?: { number?: number; position?: string }
+  ) => {
+    setIsLoggingIn(true);
+    setLoginMessage('Verificando código de seguridad...');
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'signup'
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error('No se pudo verificar el código.');
+
       const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
       
       const { error: profileError } = await supabase
         .from('hayequipo_profiles')
         .insert({
           id: data.user.id,
-          team_id: null, // do not link a default team directly
+          team_id: null,
           full_name: fullName,
           email: email,
           role: role,
@@ -317,17 +382,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           health_status: role === 'jugador' ? 'disponible' : null
         });
 
-      if (profileError) throw profileError;
+      if (profileError && !profileError.message.includes('duplicate key value')) {
+        throw profileError;
+      }
 
-      await loginWithCredentials(email, password);
+      await fetchUserProfile(data.user.id, email);
     } catch (err: any) {
-      console.error('Error signing up:', err);
+      console.error('Error verifying OTP:', err);
       throw err;
     } finally {
       setIsLoggingIn(false);
       setLoginMessage('');
     }
-  }, [loginWithCredentials]);
+  }, []);
 
   const logout = useCallback(async () => {
     setUser(null);
@@ -420,13 +487,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (teamError) throw teamError;
       if (!team) throw new Error('Código de invitación inválido');
 
-      // 2. Create player membership
+      // 2. Create membership using the user's global profile role
+      const defaultRole = user?.role || 'jugador';
       const { error: memError } = await supabase
         .from('hayequipo_memberships')
         .insert({
           profile_id: user.supabaseId,
           team_id: team.id,
-          role: 'jugador' // Default role for joined users
+          role: defaultRole
         });
 
       if (memError && !memError.message.includes('unique_violation') && !memError.message.includes('already exists')) {
@@ -450,6 +518,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout, 
       loginWithCredentials,
       signUpWithCredentials,
+      verifyOtpForSignUp,
       isLoggingIn, 
       loginMessage,
       loading,

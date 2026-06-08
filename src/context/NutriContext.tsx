@@ -211,13 +211,15 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchNutriData]);
 
   const updatePlayerPlan = useCallback(async (playerId: string, plan: Omit<PlayerSpecificPlan, 'playerId' | 'lastUpdated'>) => {
+    if (!activeTeamId) throw new Error('No hay un equipo activo seleccionado');
     try {
       const { error } = await supabase
-        .from('hayequipo_profiles')
+        .from('hayequipo_memberships')
         .update({
           nutrition_plan: plan.goal
         })
-        .eq('id', playerId);
+        .eq('profile_id', playerId)
+        .eq('team_id', activeTeamId);
 
       if (error) throw error;
       await fetchNutriData();
@@ -225,7 +227,7 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error('Error updating player plan:', error);
       throw error;
     }
-  }, [fetchNutriData]);
+  }, [fetchNutriData, activeTeamId]);
 
   return (
     <NutriContext.Provider value={{ 

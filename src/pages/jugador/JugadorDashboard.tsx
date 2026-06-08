@@ -30,11 +30,11 @@ const JugadorDashboard = () => {
       if (!user?.supabaseId) return;
       setLoadingProfile(true);
       try {
-        const { data, error } = await supabase
-          .from('hayequipo_profiles')
-          .select('*')
-          .eq('id', user.supabaseId)
-          .maybeSingle();
+        let query = supabase.from('hayequipo_squad').select('*').eq('id', user.supabaseId);
+        if (user.activeTeamId) {
+          query = query.eq('team_id', user.activeTeamId);
+        }
+        const { data, error } = await query.maybeSingle();
 
         if (error) throw error;
         setPlayerProfile(data);

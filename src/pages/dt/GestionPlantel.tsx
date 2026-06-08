@@ -4,6 +4,7 @@ import { UserPlus, Trash2, Shield, User, Activity, Apple, Pencil, Search, X, Che
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 interface Profile {
   id: string;
@@ -36,6 +37,9 @@ const roleColors = {
 };
 
 const GestionPlantel = () => {
+  const { user } = useAuth();
+  const activeTeamId = user?.activeTeamId;
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,10 +56,16 @@ const GestionPlantel = () => {
   const [position, setPosition] = useState<string>('Mediocampista');
 
   const fetchProfiles = async () => {
+    if (!activeTeamId) {
+      setProfiles([]);
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
-        .from('hayequipo_profiles')
+        .from('hayequipo_squad')
         .select('id, full_name, email, role, number, position')
+        .eq('team_id', activeTeamId)
         .order('full_name', { ascending: true });
 
       if (error) throw error;
@@ -70,7 +80,7 @@ const GestionPlantel = () => {
 
   useEffect(() => {
     fetchProfiles();
-  }, []);
+  }, [activeTeamId]);
 
   const resetForm = () => {
     setName('');
@@ -88,40 +98,73 @@ const GestionPlantel = () => {
       toast.error('El nombre es obligatorio');
       return;
     }
+    if (!activeTeamId) {
+      toast.error('No hay un equipo activo seleccionado');
+      return;
+    }
     
     const finalEmail = email.trim() || `${name.toLowerCase().replace(/\s+/g, '')}@hayequipo.com`;
 
     try {
       if (isEditing && editingId) {
-        const { error } = await supabase
+        // 1. Update global profile
+        const { error: profileError } = await supabase
           .from('hayequipo_profiles')
           .update({
             full_name: name,
             email: finalEmail,
+            role
+          })
+          .eq('id', editingId);
+
+        if (profileError) throw profileError;
+
+        // 2. Update membership
+        const { error: memError } = await supabase
+          .from('hayequipo_memberships')
+          .update({
             role,
             number: role === 'jugador' ? Number(number) || null : null,
             position: role === 'jugador' ? position : null
           })
-          .eq('id', editingId);
+          .eq('profile_id', editingId)
+          .eq('team_id', activeTeamId);
 
-        if (error) throw error;
+        if (memError) throw memError;
+
         toast.success('Miembro actualizado correctamente');
         resetForm();
         await fetchProfiles();
       } else {
         const newId = crypto.randomUUID();
-        const { error } = await supabase
+        const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+
+        // 1. Insert global profile
+        const { error: profileError } = await supabase
           .from('hayequipo_profiles')
           .insert({
             id: newId,
             full_name: name,
             email: finalEmail,
             role,
+            avatar_url: randomColor
+          });
+
+        if (profileError) throw profileError;
+
+        // 2. Insert membership
+        const { error: memError } = await supabase
+          .from('hayequipo_memberships')
+          .insert({
+            profile_id: newId,
+            team_id: activeTeamId,
+            role,
             number: role === 'jugador' ? Number(number) || null : null,
             position: role === 'jugador' ? position : null
           });
 
-        if (error) throw error;
+        if (memError) throw memError;
+
         toast.success('Miembro añadido al plantel');
         resetForm();
         await fetchProfiles();
@@ -143,12 +186,14 @@ const GestionPlantel = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
+    if (!activeTeamId) return;
     if (confirm(`¿Estás seguro de eliminar a ${name}?`)) {
       try {
         const { error } = await supabase
-          .from('hayequipo_profiles')
+          .from('hayequipo_memberships')
           .delete()
-          .eq('id', id);
+          .eq('profile_id', id)
+          .eq('team_id', activeTeamId);
 
         if (error) throw error;
         toast.success('Miembro eliminado del plantel');
