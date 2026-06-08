@@ -42,6 +42,7 @@ const getInitials = (name: string) => {
     .substring(0, 2);
 };
 
+const Login = () => {
   const { 
     login, 
     loginWithCredentials, 
