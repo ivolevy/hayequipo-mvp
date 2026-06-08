@@ -4,7 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Shield, User, Activity, Apple, ChevronRight, Loader2, Mail, Lock, Info, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const roleIcons: Record<UserRole, React.ComponentType<{ className?: string }>> = {
   dt: Shield,
@@ -59,7 +58,6 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [otpToken, setOtpToken] = useState('');
 
   // Roster profiles loaded dynamically
   const [dbMembers, setDbMembers] = useState<DemoUser[]>([]);
@@ -145,32 +143,13 @@ const Login = () => {
       );
 
       if (sessionRequired) {
-        toast.info('Código de confirmación enviado a tu correo');
+        toast.info('Enlace de confirmación enviado a tu correo');
         setMode('verify');
       } else {
         toast.success('Registro completado con éxito');
       }
     } catch (err: any) {
       toast.error(err.message || 'Error al registrarse');
-    }
-  };
-
-  const handleFormVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otpToken.length !== 6) {
-      toast.error('Ingresá el código de 6 dígitos');
-      return;
-    }
-    try {
-      await verifyOtpForSignUp(
-        email,
-        otpToken,
-        fullName,
-        'jugador'
-      );
-      toast.success('¡Email verificado! Cuenta creada correctamente');
-    } catch (err: any) {
-      toast.error(err.message || 'Error al verificar el código');
     }
   };
 
@@ -181,9 +160,9 @@ const Login = () => {
         email
       });
       if (error) throw error;
-      toast.success('Código reenviado correctamente');
+      toast.success('Enlace de confirmación reenviado');
     } catch (err: any) {
-      toast.error(err.message || 'Error al reenviar el código');
+      toast.error(err.message || 'Error al reenviar el enlace');
     }
   };
 
@@ -341,7 +320,7 @@ const Login = () => {
               </form>
             )}
 
-            {/* Render OTP Verification Form */}
+            {/* Render Link Verification Notice */}
             {mode === 'verify' && (
               <div className="space-y-6">
                 <div className="text-center space-y-2">
@@ -349,59 +328,48 @@ const Login = () => {
                     <Mail className="w-5 h-5 animate-pulse" />
                   </div>
                   <h3 className="font-display text-lg tracking-tight text-slate-900 uppercase">
-                    Verificá tu correo
+                    Confirmá tu correo
                   </h3>
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
+                    Te enviamos un enlace de confirmación a <strong className="text-slate-700">{email}</strong>.
+                  </p>
                   <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
-                    Enviamos un código de confirmación a <strong className="text-slate-600">{email}</strong>. Ingresalo para activar tu cuenta.
+                    Por favor, ingresá a tu bandeja de entrada y haz clic en el enlace para activar tu cuenta.
                   </p>
                 </div>
 
-                <form onSubmit={handleFormVerify} className="space-y-6">
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <InputOTP
-                      maxLength={6}
-                      value={otpToken}
-                      onChange={setOtpToken}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
+                <div className="space-y-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setEmail('');
+                      setPassword('');
+                    }}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
+                  >
+                    <span>IR A INICIAR SESIÓN</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
 
-                  <div className="space-y-3">
+                  <div className="flex justify-between items-center px-1">
                     <button
-                      type="submit"
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
+                      type="button"
+                      onClick={() => setMode('register')}
+                      className="text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1"
                     >
-                      <span>ACTIVAR CUENTA</span>
-                      <ChevronRight className="w-4 h-4" />
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      VOLVER A REGISTRO
                     </button>
-
-                    <div className="flex justify-between items-center px-1">
-                      <button
-                        type="button"
-                        onClick={() => setMode('register')}
-                        className="text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1"
-                      >
-                        <ArrowLeft className="w-3.5 h-3.5" />
-                        VOLVER A REGISTRO
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleResendCode}
-                        className="text-[9px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest"
-                      >
-                        REENVIAR CÓDIGO
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleResendCode}
+                      className="text-[9px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest"
+                    >
+                      REENVIAR ENLACE
+                    </button>
                   </div>
-                </form>
+                </div>
               </div>
             )}
 

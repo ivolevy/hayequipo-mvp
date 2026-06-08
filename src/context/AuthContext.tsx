@@ -84,13 +84,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = async (uid: string, email: string, selectedTeamIdOverride?: string | null) => {
     try {
       // 1. Fetch user base details
-      const { data: profile, error } = await supabase
+      let { data: profile, error } = await supabase
         .from('hayequipo_profiles')
         .select('*')
         .eq('id', uid)
         .maybeSingle();
 
       if (error) throw error;
+
+      // If no profile exists yet (first login after email link confirmation), create it
+      if (!profile) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const fullName = sessionData.session?.user.user_metadata?.full_name || 'Nuevo Usuario';
+        const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+
+        const { data: newProfile, error: createError } = await supabase
+          .from('hayequipo_profiles')
+          .insert({
+            id: uid,
+            full_name: fullName,
+            email: email,
+            role: 'jugador',
+            avatar_url: randomColor,
+            health_status: 'disponible'
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        profile = newProfile;
+      }
 
       if (profile) {
         // 2. Fetch memberships for this user
@@ -309,6 +332,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName
+          }
+        }
       });
 
       if (error) throw error;
@@ -316,22 +344,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Check if session is established (email confirmation is disabled)
       if (data.session) {
-        const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
-        const { error: profileError } = await supabase
-          .from('hayequipo_profiles')
-          .insert({
-            id: data.user.id,
-            team_id: null, // do not link a default team directly
-            full_name: fullName,
-            email: email,
-            role: role,
-            number: extra?.number || null,
-            position: extra?.position || null,
-            avatar_url: randomColor,
-            health_status: role === 'jugador' ? 'disponible' : null
-          });
-
-        if (profileError) throw profileError;
         await fetchUserProfile(data.user.id, email);
         return { sessionRequired: false };
       }
