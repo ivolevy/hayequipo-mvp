@@ -106,16 +106,9 @@ const AppRoutes = () => {
 
       {/* Admin (General Management) */}
       <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/crear-partido" element={<CrearPartido />} />
       <Route path="/admin/partidos" element={<PartidosList />} />
       <Route path="/admin/partido/:id" element={<PartidoDetalle />} />
-      <Route path="/admin/avisos" element={<DTAvisos />} />
       <Route path="/admin/plantel" element={<GestionPlantel />} />
-      <Route path="/admin/salud" element={<PFSquadHealth />} />
-      <Route path="/admin/planes-fisicos" element={<PFTrainingPlans />} />
-      <Route path="/admin/objetivos-nutri" element={<NutriObjetivos />} />
-      <Route path="/admin/recomendaciones-nutri" element={<NutriRecomendaciones />} />
-      <Route path="/admin/planes-nutri" element={<NutriPlans />} />
 
       {/* PF (Health & Training) */}
       <Route path="/pf" element={<PFDashboard />} />

@@ -87,7 +87,7 @@ const PartidosList = () => {
               Cronograma de Partidos
             </h1>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-              {role === 'dt' ? 'Gestioná convocatorias e historial' : 'Revisá tus próximos encuentros y asistencia'}
+              {role === 'dt' ? 'Gestioná convocatorias e historial' : role === 'admin' ? 'Historial y detalles de encuentros' : 'Revisá tus próximos encuentros y asistencia'}
             </p>
           </div>
         </div>
@@ -209,8 +209,8 @@ const PartidosList = () => {
                   {/* Right Side: Role specific stats/status */}
                   <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 pt-4 md:pt-0 border-slate-50 shrink-0">
                     
-                    {/* DT info: Convocation counts */}
-                    {role === 'dt' ? (
+                    {/* DT/Admin info: Convocation counts */}
+                    {role === 'dt' || role === 'admin' ? (
                       <div className="flex items-center gap-4 text-xs font-medium">
                         <StatusBadge status="confirmado" count={confirmed} />
                         <StatusBadge status="pendiente" count={pending} />

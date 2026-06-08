@@ -283,7 +283,11 @@ const GestionPlantel = () => {
 
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Rol</label>
-                  <Select value={role} onValueChange={(val: any) => setRole(val)}>
+                  <Select 
+                    value={role} 
+                    onValueChange={(val: any) => setRole(val)}
+                    disabled={isEditing && editingId === user?.supabaseId}
+                  >
                     <SelectTrigger className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800 text-left">
                       <SelectValue placeholder="Seleccionar rol" />
                     </SelectTrigger>
@@ -447,13 +451,15 @@ const GestionPlantel = () => {
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleDelete(p.id, p.full_name)}
-                          className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                          aria-label={`Eliminar a ${p.full_name}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {p.id !== user?.supabaseId && (
+                          <button
+                            onClick={() => handleDelete(p.id, p.full_name)}
+                            className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            aria-label={`Eliminar a ${p.full_name}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
