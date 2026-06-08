@@ -470,7 +470,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert({
           profile_id: user.supabaseId,
           team_id: newTeam.id,
-          role: 'dt' // Creator is the DT/Admin
+          role: 'admin' // Creator is the Admin
         });
 
       if (memError) throw memError;
@@ -499,8 +499,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (teamError) throw teamError;
       if (!team) throw new Error('Código de invitación inválido');
 
-      // 2. Create membership using the user's global profile role
-      const defaultRole = user?.role || 'jugador';
+      // 2. Create membership defaulting to 'jugador'
+      const defaultRole = 'jugador';
       const { error: memError } = await supabase
         .from('hayequipo_memberships')
         .insert({

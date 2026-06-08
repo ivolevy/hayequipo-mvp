@@ -15,6 +15,7 @@ import PartidosList from "./pages/shared/PartidosList";
 import DTDashboard from "./pages/dt/DTDashboard";
 import DTAvisos from "./pages/dt/DTAvisos";
 import GestionPlantel from "./pages/dt/GestionPlantel";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import JugadorDashboard from "./pages/jugador/JugadorDashboard";
 import JugadorEntrenamiento from "./pages/jugador/JugadorEntrenamiento";
 import JugadorNutricion from "./pages/jugador/JugadorNutricion";
@@ -102,6 +103,19 @@ const AppRoutes = () => {
       <Route path="/dt/partido/:id" element={<PartidoDetalle />} />
       <Route path="/dt/avisos" element={<DTAvisos />} />
       <Route path="/dt/plantel" element={<GestionPlantel />} />
+
+      {/* Admin (General Management) */}
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/crear-partido" element={<CrearPartido />} />
+      <Route path="/admin/partidos" element={<PartidosList />} />
+      <Route path="/admin/partido/:id" element={<PartidoDetalle />} />
+      <Route path="/admin/avisos" element={<DTAvisos />} />
+      <Route path="/admin/plantel" element={<GestionPlantel />} />
+      <Route path="/admin/salud" element={<PFSquadHealth />} />
+      <Route path="/admin/planes-fisicos" element={<PFTrainingPlans />} />
+      <Route path="/admin/objetivos-nutri" element={<NutriObjetivos />} />
+      <Route path="/admin/recomendaciones-nutri" element={<NutriRecomendaciones />} />
+      <Route path="/admin/planes-nutri" element={<NutriPlans />} />
 
       {/* PF (Health & Training) */}
       <Route path="/pf" element={<PFDashboard />} />

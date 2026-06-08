@@ -24,6 +24,15 @@ interface NavItem {
 }
 
 const navByRole: Record<UserRole, NavItem[]> = {
+  admin: [
+    { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
+    { label: 'Crear partido', to: '/admin/crear-partido', icon: PlusCircle },
+    { label: 'Partidos', to: '/admin/partidos', icon: ClipboardList },
+    { label: 'Avisos', to: '/admin/avisos', icon: Megaphone },
+    { label: 'Plantel & Staff', to: '/admin/plantel', icon: Users },
+    { label: 'Estado Físico', to: '/admin/salud', icon: Activity },
+    { label: 'Nutrición', to: '/admin/objetivos-nutri', icon: Apple },
+  ],
   dt: [
     { label: 'Dashboard', to: '/dt', icon: LayoutDashboard },
     { label: 'Crear partido', to: '/dt/crear-partido', icon: PlusCircle },
@@ -67,7 +76,7 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
   if (!user) return null;
 
   const navItems = navByRole[user.role];
-  const isMainModule = ['/jugador', '/dt', '/pf', '/nutri'].includes(location.pathname);
+  const isMainModule = ['/jugador', '/dt', '/pf', '/nutri', '/admin'].includes(location.pathname);
   const shouldDisplayBack = showBack && !isMainModule;
 
   return (

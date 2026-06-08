@@ -10,7 +10,7 @@ interface Profile {
   id: string;
   full_name: string;
   email: string;
-  role: 'jugador' | 'dt' | 'pf' | 'nutri';
+  role: 'jugador' | 'dt' | 'pf' | 'nutri' | 'admin';
   number?: number;
   position?: string;
 }
@@ -51,7 +51,7 @@ const GestionPlantel = () => {
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'jugador' | 'dt' | 'pf' | 'nutri'>('jugador');
+  const [role, setRole] = useState<'jugador' | 'dt' | 'pf' | 'nutri' | 'admin'>('jugador');
   const [number, setNumber] = useState<string>('');
   const [position, setPosition] = useState<string>('Mediocampista');
 
@@ -289,6 +289,7 @@ const GestionPlantel = () => {
                       <SelectItem value="dt">Director Técnico</SelectItem>
                       <SelectItem value="pf">Prep. Físico</SelectItem>
                       <SelectItem value="nutri">Nutricionista</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
