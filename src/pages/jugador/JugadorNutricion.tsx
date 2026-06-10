@@ -4,6 +4,32 @@ import { usePlayers } from '@/context/PlayerContext';
 import { Apple, Utensils, Info } from 'lucide-react';
 import { useNutri } from '@/context/NutriContext';
 
+interface NutritionMeal {
+  name: string;
+  food: string;
+  quantity: string;
+}
+
+interface NutritionPlanJSON {
+  title: string;
+  meals: NutritionMeal[];
+}
+
+const parseNutritionPlan = (planStr?: string): NutritionPlanJSON | null => {
+  if (!planStr || planStr === 'Sin asignar') {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(planStr);
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.meals)) {
+      return parsed as NutritionPlanJSON;
+    }
+  } catch (e) {
+    // Treat as plain text, return null so it falls back
+  }
+  return null;
+};
+
 const JugadorNutricion = () => {
   const { user } = useAuth();
   const { recommendations, playerPlans } = useNutri();
@@ -11,12 +37,14 @@ const JugadorNutricion = () => {
   const playerData = players.find(p => p.id === user?.playerId || p.id === user?.id) || players[0];
   const myPlan = playerPlans[playerData.id];
 
+  const structuredPlan = parseNutritionPlan(myPlan?.goal);
+
   return (
     <Layout title="Mi Nutrición">
       <div className="content-width px-2 py-4 md:py-8 animate-fade-in max-w-4xl pb-32">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           
-          {/* Left Column: Plan & Advice */}
+          {/* Left Column: Plan & Advice Summary */}
           <div className="lg:col-span-1 space-y-6">
             {/* Active Plan Card */}
             <div className="space-y-4">
@@ -38,9 +66,15 @@ const JugadorNutricion = () => {
                     </div>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
-                    <p className="text-xs font-semibold text-slate-600 leading-relaxed italic">
-                      "{myPlan?.goal || 'Mantenimiento del peso actual y enfoque en hidratación deportiva.'}"
-                    </p>
+                    {structuredPlan ? (
+                      <p className="text-xs font-semibold text-slate-600 leading-relaxed">
+                        Tenés asignado el plan <strong className="text-slate-800 uppercase tracking-tight font-display">{structuredPlan.title}</strong> con {structuredPlan.meals.length} comidas diarias. Mirá el detalle completo a la derecha.
+                      </p>
+                    ) : (
+                      <p className="text-xs font-semibold text-slate-600 leading-relaxed italic">
+                        "{myPlan?.goal || 'Mantenimiento del peso actual y enfoque en hidratación deportiva.'}"
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -60,13 +94,59 @@ const JugadorNutricion = () => {
             </div>
           </div>
 
-          {/* Right Column: Meal Recommendations */}
+          {/* Right Column: Meal plan details & recommendations */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Structured Nutrition Plan */}
+            {structuredPlan && (
+              <div className="space-y-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Mi Plan Alimentario Diario</p>
+                <div className="premium-card p-6 md:p-8 bg-white border-slate-100 space-y-6">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                        <Utensils className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-display text-base text-slate-900 uppercase tracking-tight">{structuredPlan.title}</h3>
+                        <p className="text-[8px] text-slate-400 uppercase font-medium tracking-widest">Plan de comidas asignado por el nutricionista</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {structuredPlan.meals.map((meal, idx) => (
+                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100/50 hover:bg-slate-50/80 transition-all gap-4">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <span className="text-[9px] font-black text-emerald-600 uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50/50 inline-block">
+                            {meal.name}
+                          </span>
+                          <p className="text-xs font-semibold text-slate-700 leading-relaxed mt-1 whitespace-pre-wrap">
+                            {meal.food}
+                          </p>
+                        </div>
+                        {meal.quantity && (
+                          <div className="shrink-0 text-left sm:text-right">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Porción / Cantidad</span>
+                            <span className="text-xs font-bold text-slate-950 bg-white border border-slate-100 px-3 py-1 rounded-xl shadow-sm inline-block mt-0.5">
+                              {meal.quantity}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* General Recommendations */}
             <div className="space-y-4">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Sugerencias del Nutricionista</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
+                {structuredPlan ? 'Sugerencias Adicionales' : 'Sugerencias del Nutricionista'}
+              </p>
               <div className="grid grid-cols-1 gap-3">
                 {recommendations.map((rec) => (
-                  <div key={rec.id} className="premium-card p-5 hover:bg-slate-50 transition-all border-slate-100">
+                  <div key={rec.id} className="premium-card p-5 hover:bg-slate-50 transition-all border-slate-100 bg-white">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">

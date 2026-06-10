@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { Trophy, Target, Zap, Clock, CalendarDays, MapPin, ChevronRight, Megaphone, Apple, Utensils, Info, Check, X } from 'lucide-react';
+import { Trophy, Target, Zap, Clock, CalendarDays, MapPin, ChevronRight, Megaphone, Apple, Utensils, Info, Check, X, Dumbbell, Activity } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useMatches } from '@/context/MatchContext';
@@ -10,6 +10,64 @@ import { useNutri } from '@/context/NutriContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+
+interface Exercise {
+  name: string;
+  sets: string;
+  reps: string;
+  rest: string;
+}
+
+interface Day {
+  name: string;
+  exercises: Exercise[];
+}
+
+interface TrainingPlanJSON {
+  title: string;
+  days: Day[];
+}
+
+interface NutritionMeal {
+  name: string;
+  food: string;
+  quantity: string;
+}
+
+interface NutritionPlanJSON {
+  title: string;
+  meals: NutritionMeal[];
+}
+
+const parseTrainingPlan = (planStr?: string): TrainingPlanJSON | null => {
+  if (!planStr || planStr === 'Sin asignar') {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(planStr);
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.days)) {
+      return parsed as TrainingPlanJSON;
+    }
+  } catch (e) {
+    // Fallback
+  }
+  return null;
+};
+
+const parseNutritionPlan = (planStr?: string): NutritionPlanJSON | null => {
+  if (!planStr || planStr === 'Sin asignar') {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(planStr);
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.meals)) {
+      return parsed as NutritionPlanJSON;
+    }
+  } catch (e) {
+    // Fallback
+  }
+  return null;
+};
 
 const JugadorDashboard = () => {
   const { user } = useAuth();
@@ -24,6 +82,9 @@ const JugadorDashboard = () => {
   
   const [playerProfile, setPlayerProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+
+  const structuredTrainingPlan = parseTrainingPlan(playerProfile?.training_plan);
+  const structuredNutritionPlan = parseNutritionPlan(playerProfile?.nutrition_plan);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -88,7 +149,7 @@ const JugadorDashboard = () => {
   const displayNumber = playerProfile?.number || '-';
 
   return (
-    <Layout title="Mi Perfil">
+    <Layout title="Mi Panel">
       <div className="content-width px-4 py-8 animate-fade-in max-w-4xl pb-32 space-y-8 md:space-y-12">
         
         {/* Player Header - Minimalist */}
@@ -181,132 +242,263 @@ const JugadorDashboard = () => {
           </div>
         )}
 
-        {/* Nutrition Section */}
-        <div className="space-y-4">
-          <h2 className="font-display text-lg tracking-tight text-slate-900 uppercase px-2">Nutrición & Rendimiento</h2>
+        {/* Main Grid: Match & Active Plans */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           
-          <div className="px-2">
-            <Link to="/jugador/nutricion" className="block group">
-              <div className="premium-card p-5 bg-white border border-slate-100 hover:border-emerald-250 transition-all flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-3.5 bg-emerald-500 rounded-full" />
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600">Mi Objetivo</p>
-                  </div>
-                  <h3 className="font-display text-base text-slate-900 uppercase tracking-tight">
-                    {playerProfile?.nutrition_plan || 'Mantenimiento General'}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400 group-hover:text-emerald-600 transition-colors">
-                  <span className="text-[9px] font-black tracking-widest uppercase hidden sm:inline">Ver Alimentación</span>
-                  <ChevronRight className="w-4 h-4" />
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-
-        {/* Next Match Highlight - Minimalist and simple */}
-        {nextMatch && (
-          <div className="space-y-3">
+          {/* Column 1: Next Match */}
+          <div className="space-y-6">
             <div className="flex items-center justify-between px-2">
-              <h2 className="font-display text-[10px] font-black text-slate-400 uppercase tracking-widest">Próximo Desafío</h2>
+              <h2 className="text-label font-bold text-slate-450">Próximo Desafío</h2>
               <Link to="/jugador/partidos" className="text-[8px] md:text-[10px] font-black text-emerald-600 tracking-widest uppercase hover:text-emerald-700 transition-colors bg-emerald-50 px-2.5 py-1 rounded-full">
                 VER TODOS
               </Link>
             </div>
-            <div className="premium-card p-5 bg-white border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <Link to={`/jugador/partido/${nextMatch.id}`} className="group flex-1 text-left">
-                <h3 className="font-display text-base font-semibold text-slate-800 uppercase tracking-tight group-hover:text-emerald-700 transition-colors flex items-center gap-1.5">
-                  vs {nextMatch.rival}
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all shrink-0" />
-                </h3>
-                <div className="flex flex-col gap-1 mt-1.5">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                    <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
-                    <span>
-                      {(() => {
-                        const formatted = format(new Date(nextMatch.date), "EEEE d 'de' MMMM · HH:mm'hs'", { locale: es });
-                        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-                      })()}
-                    </span>
-                  </div>
-                  {nextMatch.venue && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{nextMatch.venue}</span>
-                    </div>
-                  )}
+
+            {nextMatch ? (
+              <div className="premium-card p-6 bg-white border border-slate-150 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[260px] group">
+                <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity pointer-events-none">
+                  <Trophy className="w-40 h-40 rotate-12 text-emerald-950" />
                 </div>
-              </Link>
-
-
-              <div className="flex items-center gap-2">
-                {convocationStatus === 'confirmado' ? (
-                  <div className="flex flex-col items-end gap-1.5">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-emerald-600 font-medium flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5" /> Asistirás
-                      </span>
-                      <button 
-                        onClick={() => handleResponse('rechazado')}
-                        className="text-[10px] font-semibold text-slate-400 hover:text-rose-600 transition-colors uppercase tracking-wider underline"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                    {/* Convocated / Squad list status */}
+                
+                <div className="relative z-10 space-y-4">
+                  <div className="flex items-start justify-between">
                     <div>
-                      {myConvocation?.selectedForMatch === true ? (
-                        <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border border-emerald-100 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                          ¡CONVOCADO!
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        OFICIAL
+                      </span>
+                      <h3 className="font-display text-xl font-bold text-slate-800 uppercase tracking-tight mt-2 flex items-center gap-1.5 group-hover:text-emerald-700 transition-colors">
+                        vs {nextMatch.rival}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 mt-4">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                      <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-450">
+                        <CalendarDays className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <span>
+                        {(() => {
+                          const formatted = format(new Date(nextMatch.date), "EEEE d 'de' MMMM · HH:mm'hs'", { locale: es });
+                          return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+                        })()}
+                      </span>
+                    </div>
+
+                    {nextMatch.venue && (
+                      <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                        <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-450">
+                          <MapPin className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <span className="truncate">{nextMatch.venue}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="relative z-10 border-t border-slate-100 pt-4 mt-6 flex items-center justify-between gap-4 flex-wrap">
+                  {/* Convocated / Squad list status */}
+                  <div>
+                    {myConvocation?.selectedForMatch === true ? (
+                      <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border border-emerald-100 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                        ¡CONVOCADO!
+                      </span>
+                    ) : myConvocation?.selectedForMatch === false ? (
+                      <span className="bg-slate-50 text-slate-405 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border border-slate-100 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                        RESERVA
+                      </span>
+                    ) : (
+                      <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border border-amber-100 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        ESPERANDO LISTA
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {convocationStatus === 'confirmado' ? (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-emerald-600 font-medium flex items-center gap-1.5">
+                          <Check className="w-4 h-4" /> Asistirás
                         </span>
-                      ) : myConvocation?.selectedForMatch === false ? (
-                        <span className="bg-slate-50 text-slate-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border border-slate-100 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                          RESERVA
+                        <button 
+                          onClick={() => handleResponse('rechazado')}
+                          className="text-[10px] font-semibold text-slate-400 hover:text-rose-600 transition-colors uppercase tracking-wider underline"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : convocationStatus === 'rechazado' ? (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-rose-600 font-medium flex items-center gap-1.5">
+                          <X className="w-4 h-4" /> No asistiré
                         </span>
-                      ) : (
-                        <span className="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border border-amber-100 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                          ESPERANDO LISTA
+                        <button 
+                          onClick={() => handleResponse('confirmado')}
+                          className="text-[10px] font-semibold text-slate-400 hover:text-emerald-600 transition-colors uppercase tracking-wider underline"
+                        >
+                          Confirmar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleResponse('confirmado')}
+                          className="bg-emerald-600 text-white px-3.5 py-2 rounded-xl text-[10px] font-semibold tracking-wider uppercase hover:bg-emerald-700 transition-all shadow-sm"
+                        >
+                          Confirmar
+                        </button>
+                        <button 
+                          onClick={() => handleResponse('rechazado')}
+                          className="bg-slate-100 text-slate-600 px-3.5 py-2 rounded-xl text-[10px] font-semibold tracking-wider uppercase hover:bg-slate-200 transition-all"
+                        >
+                          No asistiré
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="premium-card p-8 bg-white border border-slate-100 text-center flex flex-col items-center justify-center min-h-[220px]">
+                <CalendarDays className="w-10 h-10 text-slate-300 mb-3" />
+                <h3 className="font-display text-sm text-slate-800 uppercase tracking-tight">Sin Partidos Programados</h3>
+                <p className="text-xs text-slate-400 mt-1">No hay partidos próximos agendados por el cuerpo técnico.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Column 2: Preparation & Performance */}
+          <div className="space-y-6">
+            <div className="px-2">
+              <h2 className="text-label font-bold text-slate-450">Mi Preparación & Rendimiento</h2>
+            </div>
+
+            {/* Plan de Entrenamiento Card */}
+            <div className="premium-card p-6 bg-white border border-slate-100 hover:border-emerald-250 transition-all duration-300 group">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shrink-0 shadow-md">
+                    <Dumbbell className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">PLAN DE ENTRENAMIENTO</p>
+                    <h3 className="font-display text-base text-slate-900 uppercase tracking-tight mt-0.5">
+                      {structuredTrainingPlan ? structuredTrainingPlan.title : (playerProfile?.training_plan || 'Sin asignar')}
+                    </h3>
+                  </div>
+                </div>
+                <Link to="/jugador/entrenamiento" className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100 transition-all">
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* Training details or call to action */}
+              <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
+                {structuredTrainingPlan ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-slate-600">
+                      Rutina estructurada de <span className="text-slate-850 font-bold">{structuredTrainingPlan.days.length} días</span> asignada por el PF.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {structuredTrainingPlan.days.map((day, idx) => (
+                        <span key={idx} className="text-[9px] font-bold text-slate-500 bg-white border border-slate-100 px-2 py-0.5 rounded-md">
+                          {day.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-slate-400 italic">
+                      No tienes una rutina estructurada asignada.
+                    </p>
+                    <Link to="/jugador/contacto" className="text-[9px] font-black tracking-widest text-emerald-600 uppercase hover:underline">
+                      Contactar PF
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {structuredTrainingPlan && (
+                <div className="mt-4 pt-2 flex justify-end">
+                  <Link 
+                    to="/jugador/entrenamiento" 
+                    className="text-[9px] font-black text-slate-850 tracking-widest uppercase hover:text-slate-950 transition-colors flex items-center gap-1"
+                  >
+                    <span>IR A ENTRENAR</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Plan Nutricional Card */}
+            <div className="premium-card p-6 bg-white border border-slate-100 hover:border-emerald-250 transition-all duration-300 group">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-md">
+                    <Apple className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600">PLAN NUTRICIONAL</p>
+                    <h3 className="font-display text-base text-slate-900 uppercase tracking-tight mt-0.5">
+                      {structuredNutritionPlan ? structuredNutritionPlan.title : (playerProfile?.nutrition_plan || 'Mantenimiento General')}
+                    </h3>
+                  </div>
+                </div>
+                <Link to="/jugador/nutricion" className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 group-hover:bg-emerald-50 transition-all">
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* Nutrition details or call to action */}
+              <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
+                {structuredNutritionPlan ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-slate-650">
+                      Plan alimentario de <span className="text-emerald-700 font-bold">{structuredNutritionPlan.meals.length} comidas diarias</span> asignado.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {structuredNutritionPlan.meals.slice(0, 3).map((meal, idx) => (
+                        <span key={idx} className="text-[9px] font-bold text-slate-500 bg-white border border-slate-100 px-2 py-0.5 rounded-md">
+                          {meal.name}
+                        </span>
+                      ))}
+                      {structuredNutritionPlan.meals.length > 3 && (
+                        <span className="text-[9px] font-bold text-slate-400 px-1 py-0.5">
+                          +{structuredNutritionPlan.meals.length - 3} más
                         </span>
                       )}
                     </div>
                   </div>
-                ) : convocationStatus === 'rechazado' ? (
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-rose-600 font-medium flex items-center gap-1.5">
-                      <X className="w-3.5 h-3.5" /> No asistiré
-                    </span>
-                    <button 
-                      onClick={() => handleResponse('confirmado')}
-                      className="text-[10px] font-semibold text-slate-400 hover:text-emerald-600 transition-colors uppercase tracking-wider underline"
-                    >
-                      Confirmar
-                    </button>
-                  </div>
                 ) : (
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleResponse('confirmado')}
-                      className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-semibold tracking-wider uppercase hover:bg-emerald-700 transition-all"
-                    >
-                      Confirmar
-                    </button>
-                    <button 
-                      onClick={() => handleResponse('rechazado')}
-                      className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-semibold tracking-wider uppercase hover:bg-slate-200 transition-all"
-                    >
-                      No asistiré
-                    </button>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-slate-400 italic">
+                      "{playerProfile?.nutrition_plan || 'Mantenimiento del peso actual y enfoque en hidratación deportiva.'}"
+                    </p>
+                    <Link to="/jugador/contacto" className="text-[9px] font-black tracking-widest text-emerald-600 uppercase hover:underline shrink-0 ml-2">
+                      Contactar Nutri
+                    </Link>
                   </div>
                 )}
               </div>
+
+              <div className="mt-4 pt-2 flex justify-end">
+                <Link 
+                  to="/jugador/nutricion" 
+                  className="text-[9px] font-black text-emerald-600 tracking-widest uppercase hover:text-emerald-700 transition-colors flex items-center gap-1"
+                >
+                  <span>VER ALIMENTACIÓN</span>
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
             </div>
           </div>
-        )}
+
+        </div>
 
       </div>
     </Layout>
