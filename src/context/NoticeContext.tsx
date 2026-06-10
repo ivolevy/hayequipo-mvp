@@ -37,12 +37,19 @@ export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [notices, setNotices] = useState<Notice[]>(initialNotices);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const activeTeamId = user?.activeTeamId;
 
   const fetchNotices = useCallback(async () => {
+    if (!activeTeamId) {
+      setNotices([]);
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('hayequipo_announcements')
         .select('*')
+        .eq('team_id', activeTeamId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -62,7 +69,7 @@ export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTeamId]);
 
   useEffect(() => {
     fetchNotices();
@@ -84,6 +91,7 @@ export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [fetchNotices]);
 
   const addNotice = useCallback(async (title: string, message: string, authorRole: string, type: 'standard' | 'convocatoria' = 'standard') => {
+    if (!activeTeamId) throw new Error('No hay equipo activo seleccionado');
     try {
       const { error } = await supabase
         .from('hayequipo_announcements')
@@ -93,6 +101,7 @@ export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           target_role: authorRole,
           type,
           created_by: user?.supabaseId || null,
+          team_id: activeTeamId,
           created_at: new Date().toISOString()
         });
 
@@ -102,7 +111,7 @@ export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.error('Error adding notice:', error);
       throw error;
     }
-  }, [user, fetchNotices]);
+  }, [user, activeTeamId, fetchNotices]);
 
   const editNotice = useCallback(async (id: string, title: string, message: string) => {
     if (id.startsWith('notice-')) {

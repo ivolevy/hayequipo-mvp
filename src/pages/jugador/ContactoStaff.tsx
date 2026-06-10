@@ -3,6 +3,7 @@ import Layout from '@/components/Layout';
 import { demoUsers, DemoUser, UserRole } from '@/data/users';
 import { Phone, MessageCircle, Mail, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 const getRoleLabel = (role: string) => {
   switch (role) {
@@ -23,14 +24,19 @@ const getInitials = (name: string) => {
 };
 
 const ContactoStaff = () => {
+  const { user } = useAuth();
+  const activeTeamId = user?.activeTeamId;
+
   const [staff, setStaff] = useState<DemoUser[]>(() => demoUsers.filter(u => u.role !== 'jugador'));
 
   useEffect(() => {
     const fetchStaff = async () => {
+      if (!activeTeamId) return;
       try {
         const { data, error } = await supabase
-          .from('hayequipo_profiles')
+          .from('hayequipo_squad')
           .select('id, full_name, role, avatar_url, email')
+          .eq('team_id', activeTeamId)
           .neq('role', 'jugador')
           .order('full_name', { ascending: true });
 
@@ -56,7 +62,7 @@ const ContactoStaff = () => {
     };
 
     fetchStaff();
-  }, []);
+  }, [activeTeamId]);
 
   return (
     <Layout title="Staff Técnico">

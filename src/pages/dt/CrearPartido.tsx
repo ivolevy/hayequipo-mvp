@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { useMatches } from '@/context/MatchContext';
 import { usePlayers } from '@/context/PlayerContext';
+import { Player } from '@/data/players';
 import { toast } from 'sonner';
 import { Check, CalendarDays, MapPin, Shield, Search, Users, ChevronDown, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';

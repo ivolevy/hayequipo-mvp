@@ -4,12 +4,13 @@ import { UserPlus, Trash2, Shield, User, Activity, Apple, Pencil, Search, X, Che
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 interface Profile {
   id: string;
   full_name: string;
   email: string;
-  role: 'jugador' | 'dt' | 'pf' | 'nutri';
+  role: 'jugador' | 'dt' | 'pf' | 'nutri' | 'admin';
   number?: number;
   position?: string;
 }
@@ -19,6 +20,7 @@ const roleIcons = {
   pf: Activity,
   nutri: Apple,
   jugador: User,
+  admin: Shield,
 };
 
 const roleLabels = {
@@ -26,6 +28,7 @@ const roleLabels = {
   pf: 'Preparador Físico',
   nutri: 'Nutricionista',
   jugador: 'Jugador',
+  admin: 'Administrador',
 };
 
 const roleColors = {
@@ -33,9 +36,13 @@ const roleColors = {
   pf: 'bg-purple-50 text-purple-600 border border-purple-100',
   nutri: 'bg-amber-50 text-amber-600 border border-amber-100',
   jugador: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
+  admin: 'bg-slate-900 text-white border border-slate-950',
 };
 
 const GestionPlantel = () => {
+  const { user } = useAuth();
+  const activeTeamId = user?.activeTeamId;
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,15 +54,21 @@ const GestionPlantel = () => {
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'jugador' | 'dt' | 'pf' | 'nutri'>('jugador');
+  const [role, setRole] = useState<'jugador' | 'dt' | 'pf' | 'nutri' | 'admin'>('jugador');
   const [number, setNumber] = useState<string>('');
   const [position, setPosition] = useState<string>('Mediocampista');
 
   const fetchProfiles = async () => {
+    if (!activeTeamId) {
+      setProfiles([]);
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
-        .from('hayequipo_profiles')
+        .from('hayequipo_squad')
         .select('id, full_name, email, role, number, position')
+        .eq('team_id', activeTeamId)
         .order('full_name', { ascending: true });
 
       if (error) throw error;
@@ -70,7 +83,7 @@ const GestionPlantel = () => {
 
   useEffect(() => {
     fetchProfiles();
-  }, []);
+  }, [activeTeamId]);
 
   const resetForm = () => {
     setName('');
@@ -88,40 +101,73 @@ const GestionPlantel = () => {
       toast.error('El nombre es obligatorio');
       return;
     }
+    if (!activeTeamId) {
+      toast.error('No hay un equipo activo seleccionado');
+      return;
+    }
     
     const finalEmail = email.trim() || `${name.toLowerCase().replace(/\s+/g, '')}@hayequipo.com`;
 
     try {
       if (isEditing && editingId) {
-        const { error } = await supabase
+        // 1. Update global profile
+        const { error: profileError } = await supabase
           .from('hayequipo_profiles')
           .update({
             full_name: name,
             email: finalEmail,
+            role
+          })
+          .eq('id', editingId);
+
+        if (profileError) throw profileError;
+
+        // 2. Update membership
+        const { error: memError } = await supabase
+          .from('hayequipo_memberships')
+          .update({
             role,
             number: role === 'jugador' ? Number(number) || null : null,
             position: role === 'jugador' ? position : null
           })
-          .eq('id', editingId);
+          .eq('profile_id', editingId)
+          .eq('team_id', activeTeamId);
 
-        if (error) throw error;
+        if (memError) throw memError;
+
         toast.success('Miembro actualizado correctamente');
         resetForm();
         await fetchProfiles();
       } else {
         const newId = crypto.randomUUID();
-        const { error } = await supabase
+        const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+
+        // 1. Insert global profile
+        const { error: profileError } = await supabase
           .from('hayequipo_profiles')
           .insert({
             id: newId,
             full_name: name,
             email: finalEmail,
             role,
+            avatar_url: randomColor
+          });
+
+        if (profileError) throw profileError;
+
+        // 2. Insert membership
+        const { error: memError } = await supabase
+          .from('hayequipo_memberships')
+          .insert({
+            profile_id: newId,
+            team_id: activeTeamId,
+            role,
             number: role === 'jugador' ? Number(number) || null : null,
             position: role === 'jugador' ? position : null
           });
 
-        if (error) throw error;
+        if (memError) throw memError;
+
         toast.success('Miembro añadido al plantel');
         resetForm();
         await fetchProfiles();
@@ -143,12 +189,14 @@ const GestionPlantel = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
+    if (!activeTeamId) return;
     if (confirm(`¿Estás seguro de eliminar a ${name}?`)) {
       try {
         const { error } = await supabase
-          .from('hayequipo_profiles')
+          .from('hayequipo_memberships')
           .delete()
-          .eq('id', id);
+          .eq('profile_id', id)
+          .eq('team_id', activeTeamId);
 
         if (error) throw error;
         toast.success('Miembro eliminado del plantel');
@@ -235,7 +283,11 @@ const GestionPlantel = () => {
 
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Rol</label>
-                  <Select value={role} onValueChange={(val: any) => setRole(val)}>
+                  <Select 
+                    value={role} 
+                    onValueChange={(val: any) => setRole(val)}
+                    disabled={isEditing && editingId === user?.supabaseId}
+                  >
                     <SelectTrigger className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800 text-left">
                       <SelectValue placeholder="Seleccionar rol" />
                     </SelectTrigger>
@@ -244,6 +296,7 @@ const GestionPlantel = () => {
                       <SelectItem value="dt">Director Técnico</SelectItem>
                       <SelectItem value="pf">Prep. Físico</SelectItem>
                       <SelectItem value="nutri">Nutricionista</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -398,13 +451,15 @@ const GestionPlantel = () => {
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleDelete(p.id, p.full_name)}
-                          className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                          aria-label={`Eliminar a ${p.full_name}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {p.id !== user?.supabaseId && (
+                          <button
+                            onClick={() => handleDelete(p.id, p.full_name)}
+                            className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            aria-label={`Eliminar a ${p.full_name}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

@@ -87,7 +87,7 @@ const PartidosList = () => {
               Cronograma de Partidos
             </h1>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-              {role === 'dt' ? 'Gestioná convocatorias e historial' : 'Revisá tus próximos encuentros y asistencia'}
+              {role === 'dt' ? 'Gestioná convocatorias e historial' : role === 'admin' ? 'Historial y detalles de encuentros' : 'Revisá tus próximos encuentros y asistencia'}
             </p>
           </div>
         </div>
@@ -209,8 +209,8 @@ const PartidosList = () => {
                   {/* Right Side: Role specific stats/status */}
                   <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 pt-4 md:pt-0 border-slate-50 shrink-0">
                     
-                    {/* DT info: Convocation counts */}
-                    {role === 'dt' ? (
+                    {/* DT/Admin info: Convocation counts */}
+                    {role === 'dt' || role === 'admin' ? (
                       <div className="flex items-center gap-4 text-xs font-medium">
                         <StatusBadge status="confirmado" count={confirmed} />
                         <StatusBadge status="pendiente" count={pending} />
@@ -222,17 +222,17 @@ const PartidosList = () => {
                         {personalStatus === 'confirmado' ? (
                           <span className="bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5 shadow-sm">
                             <Check className="w-3 h-3 text-emerald-500" />
-                            Asistirás
+                            {isPast ? 'Asistido' : 'Asistirás'}
                           </span>
                         ) : personalStatus === 'rechazado' ? (
                           <span className="bg-rose-50 text-rose-700 px-3.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-rose-100 flex items-center gap-1.5 shadow-sm">
                             <X className="w-3 h-3 text-rose-500" />
-                            No Asistirás
+                            {isPast ? 'No Asistido' : 'No Asistirás'}
                           </span>
                         ) : (
                           <span className="bg-amber-50/70 text-amber-700 px-3.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-amber-100 flex items-center gap-1.5 shadow-sm">
-                            <HelpCircle className="w-3 h-3 text-amber-500 animate-pulse" />
-                            Pendiente
+                            <HelpCircle className="w-3 h-3 text-amber-500" />
+                            {isPast ? 'No Asistido' : 'Pendiente'}
                           </span>
                         )}
                       </div>

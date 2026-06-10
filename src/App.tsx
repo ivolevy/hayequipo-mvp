@@ -15,6 +15,7 @@ import PartidosList from "./pages/shared/PartidosList";
 import DTDashboard from "./pages/dt/DTDashboard";
 import DTAvisos from "./pages/dt/DTAvisos";
 import GestionPlantel from "./pages/dt/GestionPlantel";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import JugadorDashboard from "./pages/jugador/JugadorDashboard";
 import JugadorEntrenamiento from "./pages/jugador/JugadorEntrenamiento";
 import JugadorNutricion from "./pages/jugador/JugadorNutricion";
@@ -32,6 +33,7 @@ import NutriObjetivos from "./pages/nutri/NutriObjetivos";
 import NutriRecomendaciones from "./pages/nutri/NutriRecomendaciones";
 
 import Profile from "./pages/shared/Profile";
+import SeleccionarEquipo from "./pages/shared/SeleccionarEquipo";
 
 import NotFound from "./pages/NotFound";
 
@@ -45,6 +47,13 @@ const AppRoutes = () => {
     if (!user) {
       if (location.pathname !== "/") {
         navigate("/", { replace: true });
+      }
+      return;
+    }
+
+    if (!user.activeTeamId) {
+      if (location.pathname !== "/seleccionar-equipo") {
+        navigate("/seleccionar-equipo", { replace: true });
       }
       return;
     }
@@ -70,12 +79,22 @@ const AppRoutes = () => {
 
   if (!user) return <Login />;
 
+  if (!user.activeTeamId) {
+    return (
+      <Routes>
+        <Route path="/seleccionar-equipo" element={<SeleccionarEquipo />} />
+        <Route path="*" element={<Navigate to="/seleccionar-equipo" replace />} />
+      </Routes>
+    );
+  }
+
   const homeRoute = `/${user.role}`;
 
   return (
     <Routes>
       <Route path="/" element={<Navigate to={homeRoute} replace />} />
       <Route path="/perfil" element={<Profile />} />
+      <Route path="/seleccionar-equipo" element={<SeleccionarEquipo />} />
 
       {/* DT (now with match management) */}
       <Route path="/dt" element={<DTDashboard />} />
@@ -84,6 +103,12 @@ const AppRoutes = () => {
       <Route path="/dt/partido/:id" element={<PartidoDetalle />} />
       <Route path="/dt/avisos" element={<DTAvisos />} />
       <Route path="/dt/plantel" element={<GestionPlantel />} />
+
+      {/* Admin (General Management) */}
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/partidos" element={<PartidosList />} />
+      <Route path="/admin/partido/:id" element={<PartidoDetalle />} />
+      <Route path="/admin/plantel" element={<GestionPlantel />} />
 
       {/* PF (Health & Training) */}
       <Route path="/pf" element={<PFDashboard />} />

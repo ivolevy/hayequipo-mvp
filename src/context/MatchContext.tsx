@@ -73,13 +73,20 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [matches, setMatches] = useState<Match[]>(initialMatches);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const activeTeamId = user?.activeTeamId;
 
   const fetchMatches = useCallback(async () => {
+    if (!activeTeamId) {
+      setMatches([]);
+      setLoading(false);
+      return;
+    }
     try {
       // 1. Obtener partidos
       const { data: dbMatches, error: matchesError } = await supabase
         .from('hayequipo_matches')
         .select('*')
+        .eq('team_id', activeTeamId)
         .order('date', { ascending: false });
 
       if (matchesError) throw matchesError;
@@ -93,8 +100,9 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // 3. Obtener todos los perfiles de jugadores para rellenar convocatorias vacías
       const { data: dbPlayers, error: playersError } = await supabase
-        .from('hayequipo_profiles')
+        .from('hayequipo_squad')
         .select('id')
+        .eq('team_id', activeTeamId)
         .eq('role', 'jugador');
 
       if (playersError) throw playersError;
@@ -151,7 +159,7 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTeamId]);
 
   useEffect(() => {
     fetchMatches();
@@ -181,23 +189,13 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const createMatch = useCallback(async (data: Omit<Match, 'id' | 'createdAt'>) => {
     try {
-      let teamId = 'e0d3e922-9070-4754-a53d-47c5417f65d2'; // default team_id
-      if (user?.supabaseId) {
-        const { data: profile } = await supabase
-          .from('hayequipo_profiles')
-          .select('team_id')
-          .eq('id', user.supabaseId)
-          .maybeSingle();
-        if (profile?.team_id) {
-          teamId = profile.team_id;
-        }
-      }
+      if (!activeTeamId) throw new Error('No hay equipo activo seleccionado');
 
       // 1. Insertar partido
       const { data: newMatch, error: matchError } = await supabase
         .from('hayequipo_matches')
         .insert({
-          team_id: teamId,
+          team_id: activeTeamId,
           date: new Date(data.date).toISOString(),
           rival: data.rival,
           location: data.venue,

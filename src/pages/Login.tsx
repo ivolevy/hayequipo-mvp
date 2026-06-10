@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { demoUsers, DemoUser, UserRole } from '@/data/users';
 import { useAuth } from '@/context/AuthContext';
-import { Shield, User, Activity, Apple, ChevronRight, Loader2, Mail, Lock, Info } from 'lucide-react';
+import { Shield, User, Activity, Apple, ChevronRight, Loader2, Mail, Lock, Info, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const roleIcons: Record<UserRole, React.ComponentType<{ className?: string }>> = {
   dt: Shield,
   pf: Activity,
   nutri: Apple,
   jugador: User,
+  admin: Shield,
 };
+
 
 const getRoleLabel = (role: string) => {
   switch (role) {
@@ -40,11 +43,28 @@ const getInitials = (name: string) => {
 };
 
 const Login = () => {
-  const { login, loginWithCredentials, isLoggingIn, loginMessage } = useAuth();
+  const { 
+    login, 
+    loginWithCredentials, 
+    signUpWithCredentials, 
+    verifyOtpForSignUp, 
+    sendPasswordResetEmail,
+    resetPasswordWithOtp,
+    isLoggingIn, 
+    loginMessage 
+  } = useAuth();
   
+  // Navigation & authentication modes
+  const [mode, setMode] = useState<'login' | 'register' | 'verify' | 'forgot' | 'reset_password'>('login');
+
   // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [otpToken, setOtpToken] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [resetPasswordOtpToken, setResetPasswordOtpToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   // Roster profiles loaded dynamically
   const [dbMembers, setDbMembers] = useState<DemoUser[]>([]);
@@ -92,6 +112,15 @@ const Login = () => {
     fetchRoster();
   }, []);
 
+  // Load remembered email
+  useEffect(() => {
+    const remembered = localStorage.getItem('hay_equipo_remembered_email');
+    if (remembered) {
+      setEmail(remembered);
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleShortcutLogin = (user: DemoUser) => {
     if (isLoggingIn) return;
     login(user);
@@ -105,9 +134,108 @@ const Login = () => {
     }
     try {
       await loginWithCredentials(email, password);
+      if (rememberMe) {
+        localStorage.setItem('hay_equipo_remembered_email', email);
+      } else {
+        localStorage.removeItem('hay_equipo_remembered_email');
+      }
       toast.success('Sesión iniciada con éxito');
     } catch (err: any) {
       toast.error(err.message || 'Error al iniciar sesión');
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error('Ingresá tu correo electrónico');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(email);
+      toast.success('Código de recuperación enviado por correo');
+      setMode('reset_password');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al enviar el correo de recuperación');
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordOtpToken.trim() || !newPassword) {
+      toast.error('Completá todos los campos');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    try {
+      await resetPasswordWithOtp(email, resetPasswordOtpToken.trim(), newPassword);
+      toast.success('¡Contraseña restablecida correctamente!');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al restablecer la contraseña');
+    }
+  };
+
+  const handleFormSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !fullName) {
+      toast.error('Completá todos los campos obligatorios');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    try {
+      const { sessionRequired } = await signUpWithCredentials(
+        email,
+        password,
+        fullName,
+        'jugador'
+      );
+
+      if (sessionRequired) {
+        toast.info('Código de confirmación enviado a tu correo');
+        setMode('verify');
+      } else {
+        toast.success('Registro completado con éxito');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error al registrarse');
+    }
+  };
+
+  const handleFormVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpToken.length !== 8) {
+      toast.error('Ingresá el código de 8 dígitos');
+      return;
+    }
+    try {
+      await verifyOtpForSignUp(
+        email,
+        otpToken,
+        fullName,
+        'jugador'
+      );
+      toast.success('¡Email verificado! Cuenta creada correctamente');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al verificar el código');
+    }
+  };
+
+  const handleResendCode = async () => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email
+      });
+      if (error) throw error;
+      toast.success('Código de confirmación reenviado');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al reenviar el código');
     }
   };
 
@@ -137,133 +265,431 @@ const Login = () => {
             </p>
           </div>
 
-          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 p-8 md:p-10 space-y-8">
-            <form onSubmit={handleFormLogin} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                  <input
-                    type="email"
-                    placeholder="correo@ejemplo.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
-                  />
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 px-4 py-8 sm:px-6 md:p-10 space-y-8">
+            {/* Toggle Switch between Login and Register */}
+            {mode !== 'verify' && mode !== 'forgot' && mode !== 'reset_password' && (
+              <div className="grid grid-cols-2 p-1 bg-slate-50 border border-slate-100/80 rounded-2xl relative">
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className={`py-2.5 text-[10px] font-black uppercase tracking-wider transition-all duration-300 rounded-xl ${
+                    mode === 'login' 
+                      ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Ingresar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('register')}
+                  className={`py-2.5 text-[10px] font-black uppercase tracking-wider transition-all duration-300 rounded-xl ${
+                    mode === 'register' 
+                      ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Crear Cuenta
+                </button>
+              </div>
+            )}
+
+            {/* Render Login Form */}
+            {mode === 'login' && (
+              <form onSubmit={handleFormLogin} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input
+                      type="email"
+                      placeholder="correo@ejemplo.com"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Contraseña</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
-                  />
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Contraseña</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2 mt-2"
-              >
-                <span>INGRESAR</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </form>
-
-            {/* Separator */}
-            <div className="space-y-6 pt-4">
-              <div className="flex items-center gap-4">
-                <div className="h-px flex-1 bg-slate-100" />
-                <h2 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] whitespace-nowrap flex items-center gap-1.5">
-                  <Info className="w-3 h-3 text-slate-300" />
-                  Atajos rápidos de prueba
-                </h2>
-                <div className="h-px flex-1 bg-slate-100" />
-              </div>
-              
-              {/* Shortcut Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {demoUsers.map((user, i) => {
-                  const Icon = roleIcons[user.role];
-                  return (
-                    <button
-                      key={user.id}
-                      onClick={() => handleShortcutLogin(user)}
-                      style={{ animationDelay: `${i * 100}ms` }}
-                      className="premium-card p-3 text-left group hover:bg-emerald-600 border border-slate-100 hover:border-emerald-600 transition-all duration-300 flex items-center gap-3.5 bg-slate-50/50"
-                    >
-                      <div
-                        className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm group-hover:bg-white/20 transition-colors"
-                        style={{ backgroundColor: user.color }}
-                      >
-                        <Icon className="w-4 h-4 text-white" aria-hidden="true" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-display text-xs text-slate-800 group-hover:text-white transition-colors uppercase tracking-tight truncate">{user.name}</div>
-                        <div className="text-[7.5px] font-black text-slate-400 group-hover:text-emerald-100 uppercase tracking-widest mt-0.5 transition-colors">{user.roleLabel}</div>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Selector dinámico para otros miembros del plantel */}
-              {dbMembers.length > 0 && (
-                <div className="pt-5 border-t border-slate-100/80 space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={e => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500/20 border-slate-200 cursor-pointer"
+                    />
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Recordar correo</span>
+                  </label>
                   <button
                     type="button"
-                    onClick={() => setShowRosterSelect(!showRosterSelect)}
-                    className="w-full flex items-center justify-between py-1 text-left text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-[0.2em]"
+                    onClick={() => setMode('forgot')}
+                    className="text-[9px] font-black text-slate-400 hover:text-slate-650 transition-colors uppercase tracking-wider"
                   >
-                    <span>Ingresar como otro miembro del plantel ({dbMembers.length})</span>
-                    <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-250 ${showRosterSelect ? 'rotate-90' : ''}`} />
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2 mt-2"
+                >
+                  <span>INGRESAR</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </form>
+            )}
+
+            {/* Render Register Form */}
+            {mode === 'register' && (
+              <form onSubmit={handleFormSignUp} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Nombre Completo</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej: Lionel Messi"
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="correo@ejemplo.com"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Contraseña</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="Mínimo 6 caracteres"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2 mt-4"
+                >
+                  <span>CREAR CUENTA</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </form>
+            )}
+
+            {/* Render OTP Verification Form */}
+            {mode === 'verify' && (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 mx-auto flex items-center justify-center text-emerald-600">
+                    <Mail className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <h3 className="font-display text-lg tracking-tight text-slate-900 uppercase">
+                    Verificá tu correo
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
+                    Enviamos un código de confirmación a <strong className="text-slate-600">{email}</strong>. Ingresalo para activar tu cuenta.
+                  </p>
+                </div>
+
+                <form onSubmit={handleFormVerify} className="space-y-6">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <InputOTP
+                      maxLength={8}
+                      value={otpToken}
+                      onChange={setOtpToken}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                        <InputOTPSlot index={6} />
+                        <InputOTPSlot index={7} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+
+                  <div className="space-y-3">
+                    <button
+                      type="submit"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
+                    >
+                      <span>ACTIVAR CUENTA</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+
+                    <div className="flex justify-between items-center px-1">
+                      <button
+                        type="button"
+                        onClick={() => setMode('register')}
+                        className="text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        VOLVER A REGISTRO
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleResendCode}
+                        className="text-[9px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest"
+                      >
+                        REENVIAR CÓDIGO
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Render Forgot Password Form */}
+            {mode === 'forgot' && (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h3 className="font-display text-lg tracking-tight text-slate-900 uppercase">
+                    Recuperar Contraseña
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
+                    Ingresá tu correo electrónico para recibir un código de recuperación.
+                  </p>
+                </div>
+
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                      <input
+                        type="email"
+                        required
+                        placeholder="correo@ejemplo.com"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
+                  >
+                    <span>ENVIAR CÓDIGO</span>
+                    <ChevronRight className="w-4 h-4" />
                   </button>
 
-                  {showRosterSelect && (
-                    <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                      <div className="relative">
-                        <select
-                          value={selectedMemberId}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSelectedMemberId(val);
-                            const found = dbMembers.find(m => m.id === val);
-                            if (found) {
-                              handleShortcutLogin(found);
-                            }
-                          }}
-                          className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 pr-10 text-xs font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all text-slate-700 appearance-none cursor-pointer"
-                        >
-                          <option value="">-- Seleccionar miembro del plantel --</option>
-                          {dbMembers.map(member => (
-                            <option key={member.id} value={member.id}>
-                              {member.name} ({getRoleLabel(member.role)})
-                            </option>
-                          ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                          <ChevronRight className="w-4 h-4 rotate-90" />
-                        </div>
-                      </div>
-                      <p className="text-[8.5px] text-slate-400/80 font-medium uppercase tracking-wider leading-relaxed px-1">
-                        * Haz clic sobre un miembro creado por el DT para simular su inicio de sesión al instante.
-                      </p>
-                    </div>
-                  )}
+                  <div className="flex justify-start px-1">
+                    <button
+                      type="button"
+                      onClick={() => setMode('login')}
+                      className="text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      VOLVER AL INICIO
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Render Reset Password with OTP Form */}
+            {mode === 'reset_password' && (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h3 className="font-display text-lg tracking-tight text-slate-900 uppercase">
+                    Nueva Contraseña
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
+                    Ingresá el código de 8 dígitos enviado a <strong className="text-slate-600">{email}</strong> y tu nueva contraseña.
+                  </p>
                 </div>
-              )}
-            </div>
+
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Código de Seguridad</label>
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <InputOTP
+                        maxLength={8}
+                        value={resetPasswordOtpToken}
+                        onChange={setResetPasswordOtpToken}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                          <InputOTPSlot index={6} />
+                          <InputOTPSlot index={7} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Nueva Contraseña</label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                      <input
+                        type="password"
+                        required
+                        placeholder="Mínimo 6 caracteres"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
+                  >
+                    <span>RESTABLECER Y ENTRAR</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex justify-start px-1">
+                    <button
+                      type="button"
+                      onClick={() => setMode('login')}
+                      className="text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      VOLVER AL INICIO
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Demo Shortcuts and dynamic squad selector (only in login mode) */}
+            {mode === 'login' && (
+              <div className="space-y-6 pt-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-px flex-1 bg-slate-100" />
+                  <h2 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] whitespace-nowrap flex items-center gap-1.5">
+                    <Info className="w-3 h-3 text-slate-300" />
+                    Atajos rápidos de prueba
+                  </h2>
+                  <div className="h-px flex-1 bg-slate-100" />
+                </div>
+                
+                {/* Shortcut Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {demoUsers.map((user, i) => {
+                    const Icon = roleIcons[user.role];
+                    return (
+                      <button
+                        key={user.id}
+                        onClick={() => handleShortcutLogin(user)}
+                        style={{ animationDelay: `${i * 100}ms` }}
+                        className="premium-card p-3 text-left group hover:bg-emerald-600 border border-slate-100 hover:border-emerald-600 transition-all duration-300 flex items-center gap-3.5 bg-slate-50/50"
+                      >
+                        <div
+                          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm group-hover:bg-white/20 transition-colors"
+                          style={{ backgroundColor: user.color }}
+                        >
+                          <Icon className="w-4 h-4 text-white" aria-hidden="true" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-display text-xs text-slate-800 group-hover:text-white transition-colors uppercase tracking-tight truncate">{user.name}</div>
+                          <div className="text-[7.5px] font-black text-slate-400 group-hover:text-emerald-100 uppercase tracking-widest mt-0.5 transition-colors">{user.roleLabel}</div>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Dynamic selector for other roster members */}
+                {dbMembers.length > 0 && (
+                  <div className="pt-5 border-t border-slate-100/80 space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowRosterSelect(!showRosterSelect)}
+                      className="w-full flex items-center justify-between py-1 text-left text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-[0.2em]"
+                    >
+                      <span>Ingresar como otro miembro del plantel ({dbMembers.length})</span>
+                      <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-250 ${showRosterSelect ? 'rotate-90' : ''}`} />
+                    </button>
+
+                    {showRosterSelect && (
+                      <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
+                        <div className="relative">
+                          <select
+                            value={selectedMemberId}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedMemberId(val);
+                              const found = dbMembers.find(m => m.id === val);
+                              if (found) {
+                                handleShortcutLogin(found);
+                              }
+                            }}
+                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 pr-10 text-xs font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all text-slate-700 appearance-none cursor-pointer"
+                          >
+                            <option value="">-- Seleccionar miembro del plantel --</option>
+                            {dbMembers.map(member => (
+                              <option key={member.id} value={member.id}>
+                                {member.name} ({getRoleLabel(member.role)})
+                              </option>
+                            ))}
+                          </select>
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <ChevronRight className="w-4 h-4 rotate-90" />
+                          </div>
+                        </div>
+                        <p className="text-[8.5px] text-slate-400/80 font-medium uppercase tracking-wider leading-relaxed px-1">
+                          * Haz clic sobre un miembro creado por el DT para simular su inicio de sesión al instante.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="text-center">
-            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.5em]">HAY EQUIPO MVP · 2026</p>
+            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.5em]">HAY EQUIPO · 2026</p>
           </div>
         </div>
       )}
