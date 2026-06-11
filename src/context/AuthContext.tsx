@@ -138,16 +138,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setMemberships(formattedMems);
 
         // 3. Determine active team
-        let targetTeamId = selectedTeamIdOverride !== undefined ? selectedTeamIdOverride : activeTeamId;
-        
-        if (!targetTeamId) {
-          const savedActive = localStorage.getItem('hay_equipo_active_team_id');
-          if (savedActive && formattedMems.some(m => m.team_id === savedActive)) {
-            targetTeamId = savedActive;
-          } else if (formattedMems.length === 1) {
-            targetTeamId = formattedMems[0].team_id;
-          }
-        }
+        // Do not auto-load saved active team from localStorage on initial startup to force landing on /seleccionar-equipo
+        const targetTeamId = selectedTeamIdOverride !== undefined ? selectedTeamIdOverride : null;
 
         if (targetTeamId && formattedMems.some(m => m.team_id === targetTeamId)) {
           const activeMem = formattedMems.find(m => m.team_id === targetTeamId)!;

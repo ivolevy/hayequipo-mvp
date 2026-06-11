@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { demoUsers, DemoUser, UserRole } from '@/data/users';
 import { useAuth } from '@/context/AuthContext';
-import { Shield, User, Activity, Apple, ChevronRight, Loader2, Mail, Lock, Info, ArrowLeft } from 'lucide-react';
+import { Shield, User, Activity, Apple, ChevronRight, Loader2, Mail, Lock, Info, ArrowLeft, Download } from 'lucide-react';
+import { usePWA } from '@/hooks/usePWA';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -53,6 +54,15 @@ const Login = () => {
     isLoggingIn, 
     loginMessage 
   } = useAuth();
+
+  const { showInstallBtn, triggerInstall } = usePWA();
+
+  const handleInstallClick = async () => {
+    const result = await triggerInstall();
+    if (result === 'ios' || result === 'unsupported') {
+      window.dispatchEvent(new Event('open-pwa-install-modal'));
+    }
+  };
   
   // Navigation & authentication modes
   const [mode, setMode] = useState<'login' | 'register' | 'verify' | 'forgot' | 'reset_password'>('login');
@@ -240,9 +250,12 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-[#FAFAFA] selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen flex flex-col items-center justify-between px-4 py-6 bg-[#FAFAFA] selection:bg-slate-900 selection:text-white">
+      {/* Top Spacer */}
+      <div className="h-4 md:h-12 hidden md:block shrink-0" />
+
       {isLoggingIn ? (
-        <div className="animate-fade-in text-center space-y-8">
+        <div className="animate-fade-in text-center space-y-8 flex-1 flex flex-col justify-center">
           <div className="relative">
              <div className="w-20 h-20 border-[3px] border-slate-100 rounded-[2rem] mx-auto flex items-center justify-center">
                <Loader2 className="w-8 h-8 text-slate-900 animate-spin" />
@@ -254,7 +267,7 @@ const Login = () => {
           </div>
         </div>
       ) : (
-        <div className="w-full max-w-xl animate-fade-in space-y-10">
+        <div className="w-full max-w-xl animate-fade-in space-y-10 flex-1 flex flex-col justify-center py-4">
           {/* Logo & Header */}
           <div className="text-center space-y-3">
             <h1 className="font-display text-3xl md:text-4xl tracking-tight text-slate-900 leading-none uppercase">
@@ -688,11 +701,23 @@ const Login = () => {
             )}
           </div>
 
-          <div className="text-center">
-            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.5em]">HAY EQUIPO · 2026</p>
-          </div>
         </div>
       )}
+
+      {/* Footer anchored at the bottom of the screen */}
+      <div className="text-center flex flex-col items-center gap-3 pt-4 pb-2 shrink-0">
+        <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.5em]">HAY EQUIPO · 2026</p>
+        {showInstallBtn && (
+          <button
+            type="button"
+            onClick={handleInstallClick}
+            className="inline-flex items-center gap-1.5 text-[9px] font-black text-emerald-600 hover:text-emerald-700 active:scale-95 transition-all uppercase tracking-widest bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-full px-3.5 py-1.5 shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+            <span>Instalar Aplicación</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 };
