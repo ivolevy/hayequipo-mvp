@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { usePWA } from '@/hooks/usePWA';
 import { Download, X, ArrowDown, Share2, PlusSquare } from 'lucide-react';
 
@@ -6,6 +7,9 @@ export const InstallPrompt: React.FC = () => {
   const { showInstallBtn, isIOS, triggerInstall } = usePWA();
   const [showBanner, setShowBanner] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
+  const location = useLocation();
+
+  const hasBottomNav = !['/', '/seleccionar-equipo'].includes(location.pathname);
 
   useEffect(() => {
     // Show banner only if PWA install button is available and user hasn't dismissed it in this session
@@ -47,7 +51,9 @@ export const InstallPrompt: React.FC = () => {
     <>
       {/* Floating Bottom Banner (for initial invitation to install) */}
       {showBanner && (
-        <div className="fixed bottom-32 left-4 right-4 md:left-auto md:right-8 md:bottom-8 max-w-sm bg-slate-900 text-white rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] border border-slate-800 z-[9999] flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className={`fixed left-4 right-4 md:left-auto md:right-8 md:bottom-8 max-w-sm bg-slate-900 text-white rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] border border-slate-800 z-[9999] flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-5 duration-300 ${
+          hasBottomNav ? 'bottom-32' : 'bottom-24'
+        }`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0 text-white shadow-md">
               <Download className="w-5 h-5 animate-pulse" />
