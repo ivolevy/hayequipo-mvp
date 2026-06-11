@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { usePWA } from '@/hooks/usePWA';
 import { Download, X, ArrowDown, Share2, PlusSquare } from 'lucide-react';
 
@@ -7,9 +6,19 @@ export const InstallPrompt: React.FC = () => {
   const { showInstallBtn, isIOS, triggerInstall } = usePWA();
   const [showBanner, setShowBanner] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
-  const location = useLocation();
+  const [pathname, setPathname] = useState(window.location.pathname);
 
-  const hasBottomNav = !['/', '/seleccionar-equipo'].includes(location.pathname);
+  const hasBottomNav = !['/', '/seleccionar-equipo'].includes(pathname);
+
+  useEffect(() => {
+    // Listen to pathname changes dynamically
+    const interval = setInterval(() => {
+      if (window.location.pathname !== pathname) {
+        setPathname(window.location.pathname);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [pathname]);
 
   useEffect(() => {
     // Show banner only if PWA install button is available and user hasn't dismissed it in this session
