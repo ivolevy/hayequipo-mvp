@@ -37,11 +37,16 @@ import SeleccionarEquipo from "./pages/shared/SeleccionarEquipo";
 
 import NotFound from "./pages/NotFound";
 import { InstallPrompt } from "./components/InstallPrompt";
+import { NotificationPrompt } from "./components/NotificationPrompt";
+import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Suscribirse a las notificaciones en tiempo real
+  useRealtimeNotifications();
 
   useEffect(() => {
     if (loading) return;
@@ -144,8 +149,9 @@ const App = () => (
             <MatchProvider>
               <TooltipProvider>
                 <Sonner position="top-center" />
-                <InstallPrompt />
                 <BrowserRouter>
+                  <InstallPrompt />
+                  <NotificationPrompt />
                   <AppRoutes />
                 </BrowserRouter>
               </TooltipProvider>
