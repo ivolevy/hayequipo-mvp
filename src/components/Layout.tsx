@@ -14,8 +14,10 @@ import {
   Phone,
   Megaphone,
   Target,
-  Utensils
+  Utensils,
+  Download
 } from 'lucide-react';
+import { usePWA } from '@/hooks/usePWA';
 
 interface NavItem {
   label: string;
@@ -68,6 +70,14 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
   const { user, logout, switchTeam } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { showInstallBtn, triggerInstall } = usePWA();
+
+  const handleInstallClick = async () => {
+    const result = await triggerInstall();
+    if (result === 'ios' || result === 'unsupported') {
+      window.dispatchEvent(new Event('open-pwa-install-modal'));
+    }
+  };
 
   if (!user) return null;
 
@@ -125,6 +135,15 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
               <div className="text-[10px] font-black text-emerald-100 uppercase tracking-widest opacity-60">Ver Perfil</div>
             </div>
           </Link>
+          {showInstallBtn && (
+            <button
+              onClick={handleInstallClick}
+              className="flex items-center gap-4 px-5 py-3.5 text-xs font-black text-emerald-50 hover:text-white transition-all w-full rounded-2xl hover:bg-white/10 uppercase tracking-widest mb-1.5"
+            >
+              <Download className="w-5 h-5" aria-hidden="true" />
+              <span>Instalar App</span>
+            </button>
+          )}
           <button
             onClick={switchTeam}
             className="flex items-center gap-4 px-5 py-3.5 text-xs font-black text-emerald-50 hover:text-white transition-all w-full rounded-2xl hover:bg-white/10 uppercase tracking-widest mb-1.5"
@@ -151,6 +170,15 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
+          {showInstallBtn && (
+            <button
+              onClick={handleInstallClick}
+              className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100"
+              aria-label="Instalar App"
+            >
+              <Download className="w-4.5 h-4.5 text-emerald-600" />
+            </button>
+          )}
           <button
             onClick={switchTeam}
             className="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 transition-all flex items-center justify-center text-slate-500 shadow-sm border border-slate-100"

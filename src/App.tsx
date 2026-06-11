@@ -36,6 +36,7 @@ import Profile from "./pages/shared/Profile";
 import SeleccionarEquipo from "./pages/shared/SeleccionarEquipo";
 
 import NotFound from "./pages/NotFound";
+import { InstallPrompt } from "./components/InstallPrompt";
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -143,6 +144,7 @@ const App = () => (
             <MatchProvider>
               <TooltipProvider>
                 <Sonner position="top-center" />
+                <InstallPrompt />
                 <BrowserRouter>
                   <AppRoutes />
                 </BrowserRouter>
