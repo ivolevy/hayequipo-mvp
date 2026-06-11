@@ -51,24 +51,24 @@ export const InstallPrompt: React.FC = () => {
     <>
       {/* Floating Bottom Banner (for initial invitation to install) */}
       {showBanner && (
-        <div className={`fixed left-4 right-4 md:left-auto md:right-8 md:bottom-8 max-w-sm bg-slate-900 text-white rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] border border-slate-800 z-[9999] flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-5 duration-300 ${
+        <div className={`fixed left-4 right-4 md:left-auto md:right-8 md:bottom-8 max-w-sm bg-slate-900/95 backdrop-blur-md text-white rounded-2xl p-3 md:p-4 shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-slate-800/80 z-[9999] flex items-center justify-between gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-5 duration-300 ${
           hasBottomNav ? 'bottom-32' : 'bottom-24'
         }`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0 text-white shadow-md">
-              <Download className="w-5 h-5 animate-pulse" />
+          <div className="flex items-center gap-2.5 md:gap-3 min-w-0">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0 text-white shadow-md">
+              <Download className="w-4.5 h-4.5 md:w-5 md:h-5 animate-pulse" />
             </div>
-            <div>
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-100">Instalá la Aplicación</h4>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-snug">
+            <div className="min-w-0">
+              <h4 className="text-[10px] md:text-xs font-black uppercase tracking-wider text-slate-100 truncate">Instalá la Aplicación</h4>
+              <p className="hidden md:block text-[10px] text-slate-400 font-medium mt-0.5 leading-snug">
                 Accedé más rápido y sin barras del navegador en tu pantalla.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             <button
               onClick={handleInstallClick}
-              className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-[9px] tracking-widest uppercase py-2 px-3 rounded-lg transition-all shadow-md shrink-0"
+              className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-[8.5px] md:text-[9px] tracking-widest uppercase py-1.5 px-3 md:py-2 md:px-3 rounded-lg transition-all shadow-md"
             >
               Instalar
             </button>
@@ -77,7 +77,7 @@ export const InstallPrompt: React.FC = () => {
               className="text-slate-500 hover:text-slate-300 p-1 transition-colors"
               aria-label="Cerrar"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 md:w-4 h-4" />
             </button>
           </div>
         </div>
