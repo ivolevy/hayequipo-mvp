@@ -80,7 +80,7 @@ ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 -- Seed Profiles
 INSERT INTO public.hayequipo_profiles (id, team_id, full_name, email, role, number, position, avatar_url, created_at, health_status, injury_description, training_plan, nutrition_plan, weight, target_weight) VALUES
 ('11111111-1111-1111-1111-111111111111', 'e0d3e922-9070-4754-a53d-47c5417f65d2', 'Caruso Lombardi', 'caruso@hayequipo.com', 'dt', null, null, null, '2026-05-14 12:31:44.74658+00', 'disponible', null, null, null, null, null),
-('33333333-3333-3333-3333-333333333333', 'e0d3e922-9070-4754-a53d-47c5417f65d2', 'Elo Podcast', 'elo@hayequipo.com', 'nutri', null, null, null, '2026-05-14 12:31:44.74658+00', 'disponible', null, null, null, null, null),
+('33333333-3333-3333-3333-333333333333', 'e0d3e922-9070-4754-a53d-47c5417f65d2', 'Mario', 'mario@hayequipo.com', 'nutri', null, null, null, '2026-05-14 12:31:44.74658+00', 'disponible', null, null, null, null, null),
 ('44444444-4444-4444-4444-444444444444', 'e0d3e922-9070-4754-a53d-47c5417f65d2', 'Lucas Janson', 'janson@hayequipo.com', 'pf', null, null, null, '2026-05-14 12:31:44.74658+00', 'disponible', null, null, null, null, null),
 ('22222222-2222-2222-2222-222222222222', 'e0d3e922-9070-4754-a53d-47c5417f65d2', 'Michael Olise', 'olise@hayequipo.com', 'jugador', 10, 'Enganche', null, '2026-05-14 12:31:44.74658+00', 'disponible', null, null, null, null, null),
 ('97891f2f-b2bb-4ffa-853e-915238584ec9', 'e0d3e922-9070-4754-a53d-47c5417f65d2', 'Lionel Messi', 'messi@afa.com', 'jugador', 10, 'Delantero', null, '2026-05-14 12:31:44.74658+00', 'disponible', null, null, null, null, null),

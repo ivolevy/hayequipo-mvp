@@ -38,10 +38,10 @@ export const demoUsers: DemoUser[] = [
   {
     id: '33333333-3333-3333-3333-333333333333',
     supabaseId: '33333333-3333-3333-3333-333333333333',
-    name: 'Elo Podcast',
+    name: 'Mario',
     role: 'nutri',
     roleLabel: 'Nutricionista',
-    initials: 'EP',
+    initials: 'M',
     color: '#D1127B',
     emoji: '🍎',
   },

@@ -71,7 +71,7 @@ const Profile = () => {
                       {user.email || (
                         user.role === 'dt' ? 'caruso@hayequipo.app' : 
                         user.role === 'jugador' ? 'olise@hayequipo.app' : 
-                        user.role === 'pf' ? 'janson@hayequipo.app' : 'elo@hayequipo.app'
+                        user.role === 'pf' ? 'janson@hayequipo.app' : 'mario@hayequipo.app'
                       )}
                     </p>
                   </div>
