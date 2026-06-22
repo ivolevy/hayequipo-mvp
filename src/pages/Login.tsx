@@ -81,6 +81,7 @@ const Login = () => {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [showRosterSelect, setShowRosterSelect] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [demoPlan, setDemoPlan] = useState<'free' | 'intermediate' | 'advanced' | 'premium'>('free');
 
   useEffect(() => {
     const fetchRoster = async () => {
@@ -133,7 +134,7 @@ const Login = () => {
 
   const handleShortcutLogin = (user: DemoUser) => {
     if (isLoggingIn) return;
-    login(user);
+    login(user, demoPlan);
   };
 
   const handleFormLogin = async (e: React.FormEvent) => {
@@ -623,6 +624,35 @@ const Login = () => {
                     Atajos rápidos de prueba
                   </h2>
                   <div className="h-px flex-1 bg-slate-100" />
+                </div>
+
+                {/* Demo Plan Selector */}
+                <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl space-y-2">
+                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">
+                    PLAN DEL EQUIPO SEMILLA PARA LA DEMO
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(['free', 'intermediate', 'advanced', 'premium'] as const).map((p) => {
+                      const label = p === 'free' ? 'Gratis' : 
+                                    p === 'intermediate' ? 'Intermedio' : 
+                                    p === 'advanced' ? 'Avanzado' : 'Premium';
+                      const active = demoPlan === p;
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setDemoPlan(p)}
+                          className={`py-1.5 px-1 rounded-lg text-[8px] font-black uppercase tracking-wider text-center transition-all border ${
+                            active 
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm' 
+                              : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50 hover:text-slate-650'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 
                 {/* Shortcut Grid */}

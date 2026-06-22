@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
-import { players } from '@/data/players';
 
 export type ConvocationStatus = 'pendiente' | 'confirmado' | 'rechazado';
 
@@ -21,6 +20,7 @@ export interface Match {
   convocations: Convocation[];
   createdAt: string;
   completed?: boolean;
+  formation?: string;
 }
 
 interface MatchContextType {
@@ -39,38 +39,8 @@ interface MatchContextType {
 
 const MatchContext = createContext<MatchContextType | null>(null);
 
-const initialMatches: Match[] = [
-  {
-    id: 'match-hardcoded-1',
-    date: '2026-05-01T21:30:00',
-    rival: 'Laba Tata',
-    venue: 'Nilo Costanera',
-    createdAt: new Date().toISOString(),
-    convocations: players
-      .filter(p => p.healthStatus !== 'lesionado')
-      .map(p => ({
-        playerId: p.id,
-        status: 'pendiente'
-      }))
-  },
-  {
-    id: 'match-hardcoded-2',
-    date: '2026-05-08T21:30:00',
-    rival: 'Los Pibes de la Cuadra',
-    venue: 'El Monumentalito',
-    createdAt: new Date().toISOString(),
-    convocations: players
-      .filter(p => p.healthStatus !== 'lesionado')
-      .map(p => ({
-        playerId: p.id,
-        status: 'confirmado',
-        selectedForMatch: true
-      }))
-  }
-];
-
 export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [matches, setMatches] = useState<Match[]>(initialMatches);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const activeTeamId = user?.activeTeamId;
@@ -91,12 +61,19 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (matchesError) throw matchesError;
 
-      // 2. Obtener convocatorias
-      const { data: dbConvocations, error: convocationsError } = await supabase
-        .from('hayequipo_convocations')
-        .select('*');
+      const matchIds = (dbMatches || []).map(m => m.id);
+      let dbConvocations: any[] = [];
 
-      if (convocationsError) throw convocationsError;
+      // 2. Obtener convocatorias filtradas por los partidos del equipo
+      if (matchIds.length > 0) {
+        const { data: convs, error: convocationsError } = await supabase
+          .from('hayequipo_convocations')
+          .select('*')
+          .in('match_id', matchIds);
+
+        if (convocationsError) throw convocationsError;
+        dbConvocations = convs || [];
+      }
 
       // 3. Obtener todos los perfiles de jugadores para rellenar convocatorias vacías
       const { data: dbPlayers, error: playersError } = await supabase
@@ -145,15 +122,12 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           venue: m.location,
           createdAt: m.created_at,
           completed: m.status === 'completed',
-          convocations: fullConvs
+          convocations: fullConvs,
+          formation: m.formation || '4-3-3'
         };
       });
 
-      const savedDeleted = localStorage.getItem('deleted_hardcoded_matches');
-      const deletedIds: string[] = savedDeleted ? JSON.parse(savedDeleted) : [];
-      const visibleInitialMatches = initialMatches.filter(m => !deletedIds.includes(m.id));
-
-      setMatches([...mappedMatches, ...visibleInitialMatches]);
+      setMatches(mappedMatches);
     } catch (error) {
       console.error('Error fetching matches & convocations:', error);
     } finally {
@@ -199,7 +173,8 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           date: new Date(data.date).toISOString(),
           rival: data.rival,
           location: data.venue,
-          status: 'scheduled'
+          status: 'scheduled',
+          formation: data.formation || '4-3-3'
         })
         .select()
         .single();
@@ -227,13 +202,9 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error('Error creating match:', error);
       throw error;
     }
-  }, [user, fetchMatches]);
+  }, [activeTeamId, fetchMatches]);
 
   const updateMatch = useCallback(async (matchId: string, data: Partial<Omit<Match, 'id' | 'createdAt'>>) => {
-    if (matchId.startsWith('match-hardcoded')) {
-      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...data } as Match : m));
-      return;
-    }
     try {
       const { error: matchError } = await supabase
         .from('hayequipo_matches')
@@ -241,7 +212,8 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           date: data.date ? new Date(data.date).toISOString() : undefined,
           rival: data.rival,
           location: data.venue,
-          status: data.completed ? 'completed' : 'scheduled'
+          status: data.completed !== undefined ? (data.completed ? 'completed' : 'scheduled') : undefined,
+          formation: data.formation
         })
         .eq('id', matchId);
 
@@ -281,16 +253,6 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchMatches]);
 
   const deleteMatch = useCallback(async (matchId: string) => {
-    if (matchId.startsWith('match-hardcoded')) {
-      const savedDeleted = localStorage.getItem('deleted_hardcoded_matches');
-      const deletedIds: string[] = savedDeleted ? JSON.parse(savedDeleted) : [];
-      if (!deletedIds.includes(matchId)) {
-        const next = [...deletedIds, matchId];
-        localStorage.setItem('deleted_hardcoded_matches', JSON.stringify(next));
-      }
-      setMatches(prev => prev.filter(m => m.id !== matchId));
-      return;
-    }
     try {
       const { error } = await supabase
         .from('hayequipo_matches')
@@ -306,22 +268,6 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchMatches]);
 
   const respondConvocation = useCallback(async (matchId: string, playerId: string, status: 'confirmado' | 'rechazado') => {
-    if (matchId.startsWith('match-hardcoded')) {
-      setMatches(prev =>
-        prev.map(m =>
-          m.id === matchId
-            ? {
-                ...m,
-                convocations: m.convocations.map(c =>
-                  c.playerId === playerId ? { ...c, status } : c
-                ),
-              }
-            : m
-        )
-      );
-      return;
-    }
-
     try {
       // Verificar si ya existe la convocatoria
       const { data: existing } = await supabase
@@ -357,20 +303,6 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchMatches]);
 
   const removeConvocation = useCallback(async (matchId: string, playerId: string) => {
-    if (matchId.startsWith('match-hardcoded')) {
-      setMatches(prev =>
-        prev.map(m =>
-          m.id === matchId
-            ? {
-                ...m,
-                convocations: m.convocations.filter(c => c.playerId !== playerId),
-              }
-            : m
-        )
-      );
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('hayequipo_convocations')
@@ -387,22 +319,6 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchMatches]);
 
   const setSelectionForMatch = useCallback(async (matchId: string, playerId: string, selected: boolean) => {
-    if (matchId.startsWith('match-hardcoded')) {
-      setMatches(prev =>
-        prev.map(m =>
-          m.id === matchId
-            ? {
-                ...m,
-                convocations: m.convocations.map(c =>
-                  c.playerId === playerId ? { ...c, selectedForMatch: selected } : c
-                ),
-              }
-            : m
-        )
-      );
-      return;
-    }
-
     try {
       // Verificar si ya existe la convocatoria
       const { data: existing } = await supabase
@@ -438,29 +354,6 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchMatches]);
 
   const updatePlayerPitchPosition = useCallback(async (matchId: string, playerId: string, x: number | null, y: number | null) => {
-    if (matchId.startsWith('match-hardcoded')) {
-      setMatches(prev =>
-        prev.map(m =>
-          m.id === matchId
-            ? {
-                ...m,
-                convocations: m.convocations.map(c =>
-                  c.playerId === playerId 
-                    ? { 
-                        ...c, 
-                        positionX: x !== null ? x : undefined, 
-                        positionY: y !== null ? y : undefined,
-                        selectedForMatch: x !== null
-                      } 
-                    : c
-                ),
-              }
-            : m
-        )
-      );
-      return;
-    }
-
     try {
       // Verificar si ya existe la convocatoria
       const { data: existing } = await supabase

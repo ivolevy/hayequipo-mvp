@@ -69,31 +69,33 @@ const initialPlayerPlans: Record<string, PlayerSpecificPlan> = {
 export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const activeTeamId = user?.activeTeamId;
-  const [objectives, setObjectives] = useState<NutriObjective[]>(initialObjectives);
-  const [recommendations, setRecommendations] = useState<MealRecommendation[]>(initialRecommendations);
-  const [playerPlans, setPlayerPlans] = useState<Record<string, PlayerSpecificPlan>>(initialPlayerPlans);
+  const [objectives, setObjectives] = useState<NutriObjective[]>([]);
+  const [recommendations, setRecommendations] = useState<MealRecommendation[]>([]);
+  const [playerPlans, setPlayerPlans] = useState<Record<string, PlayerSpecificPlan>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchNutriData = useCallback(async () => {
     if (!activeTeamId) {
-      setObjectives(initialObjectives);
-      setRecommendations(initialRecommendations);
+      setObjectives([]);
+      setRecommendations([]);
       setPlayerPlans({});
       setLoading(false);
       return;
     }
     try {
-      // 1. Cargar objetivos
+      // 1. Cargar objetivos filtrados por equipo
       const { data: dbObjectives, error: objError } = await supabase
         .from('hayequipo_nutrition_objectives')
-        .select('*');
+        .select('*')
+        .eq('team_id', activeTeamId);
 
       if (objError) throw objError;
 
-      // 2. Cargar recomendaciones
+      // 2. Cargar recomendaciones filtradas por equipo
       const { data: dbRecs, error: recsError } = await supabase
         .from('hayequipo_nutrition_recommendations')
-        .select('*');
+        .select('*')
+        .eq('team_id', activeTeamId);
 
       if (recsError) throw recsError;
 
@@ -123,7 +125,7 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }));
 
       // Mapear planes específicos por jugador
-      const plansMap: Record<string, PlayerSpecificPlan> = { ...initialPlayerPlans };
+      const plansMap: Record<string, PlayerSpecificPlan> = {};
       (dbProfiles || []).forEach(p => {
         if (p.nutrition_plan) {
           plansMap[p.id] = {
@@ -135,8 +137,8 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       });
 
-      setObjectives([...mappedObjectives, ...initialObjectives]);
-      setRecommendations([...mappedRecs, ...initialRecommendations]);
+      setObjectives(mappedObjectives);
+      setRecommendations(mappedRecs);
       setPlayerPlans(plansMap);
     } catch (error) {
       console.error('Error fetching nutrition data:', error);
@@ -150,13 +152,15 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchNutriData]);
 
   const addObjective = useCallback(async (obj: Omit<NutriObjective, 'id'>) => {
+    if (!activeTeamId) throw new Error('No hay equipo activo seleccionado');
     try {
       const { error } = await supabase
         .from('hayequipo_nutrition_objectives')
         .insert({
           title: obj.title,
           description: obj.description,
-          category: obj.category
+          category: obj.category,
+          team_id: activeTeamId
         });
 
       if (error) throw error;
@@ -165,14 +169,9 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error('Error adding objective:', error);
       throw error;
     }
-  }, [fetchNutriData]);
+  }, [activeTeamId, fetchNutriData]);
 
   const removeObjective = useCallback(async (id: string) => {
-    if (id.startsWith('objective-hardcoded')) {
-      setObjectives(prev => prev.filter(o => o.id !== id));
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('hayequipo_nutrition_objectives')
@@ -188,11 +187,6 @@ export const NutriProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchNutriData]);
 
   const updateRecommendation = useCallback(async (rec: MealRecommendation) => {
-    if (rec.id.startsWith('recommendation-hardcoded')) {
-      setRecommendations(prev => prev.map(r => r.id === rec.id ? rec : r));
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('hayequipo_nutrition_recommendations')

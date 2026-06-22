@@ -38,6 +38,56 @@ export const showSystemNotification = (title: string, options?: NotificationOpti
   }
 };
 
+// VAPID Public Key generated for PWA Push notifications
+const PUBLIC_VAPID_KEY = 'BK3l5bBpfj25jrmqizzbbf6zRl51Q5PuYeJR2buxQFOlJDlTVhzbAY3dmW_mjde_FnYvEHKXVeTVVXfUIuSTeH0';
+
+// Helper to convert VAPID public key base64 to Uint8Array
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
+
+const subscribeUserToPush = async (supabaseUserId: string) => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.warn('Push messaging is not supported in this browser');
+    return;
+  }
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    
+    // Subscribe user
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
+    });
+
+    const subJson = subscription.toJSON();
+    if (subJson.endpoint && subJson.keys?.auth && subJson.keys?.p256dh) {
+      // Save/sync device token in Supabase
+      const { error } = await supabase
+        .from('hayequipo_push_subscriptions')
+        .upsert({
+          profile_id: supabaseUserId,
+          endpoint: subJson.endpoint,
+          auth: subJson.keys.auth,
+          p256dh: subJson.keys.p256dh,
+          user_agent: navigator.userAgent
+        }, { onConflict: 'endpoint' });
+
+      if (error) throw error;
+      console.log('Successfully synced PWA push subscription with Supabase');
+    }
+  } catch (err) {
+    console.error('Failed to subscribe user to PWA push notifications:', err);
+  }
+};
+
 export const useRealtimeNotifications = () => {
   const { user } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
@@ -59,16 +109,23 @@ export const useRealtimeNotifications = () => {
         showSystemNotification('¡Notificaciones Activas! ⚽', {
           body: 'Ya podés recibir alertas de partidos y avisos en tu pantalla.',
         });
+        if (user?.supabaseId) {
+          subscribeUserToPush(user.supabaseId);
+        }
       }
       return result;
     } catch (err) {
       console.error('Error requesting notification permission:', err);
       return 'denied';
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!user?.activeTeamId || permission !== 'granted') return;
+
+    if (user?.supabaseId) {
+      subscribeUserToPush(user.supabaseId);
+    }
 
     // 1. Subscribe to new matches on the active team
     const matchChannel = supabase

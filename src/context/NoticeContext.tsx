@@ -22,19 +22,8 @@ interface NoticeContextType {
 
 const NoticeContext = createContext<NoticeContextType | null>(null);
 
-const initialNotices: Notice[] = [
-  {
-    id: 'notice-1',
-    title: 'Cambio de cancha',
-    message: 'Chicos, el partido del sábado se juega en la cancha 3 de césped sintético. Lleven el calzado adecuado.',
-    date: new Date().toISOString(),
-    authorRole: 'dt',
-    type: 'standard',
-  }
-];
-
 export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [notices, setNotices] = useState<Notice[]>(initialNotices);
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const activeTeamId = user?.activeTeamId;
@@ -63,7 +52,7 @@ export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         type: (n.type as 'standard' | 'convocatoria') || 'standard',
       }));
 
-      setNotices([...mappedNotices, ...initialNotices]);
+      setNotices(mappedNotices);
     } catch (error) {
       console.error('Error fetching notices:', error);
     } finally {
@@ -114,11 +103,6 @@ export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user, activeTeamId, fetchNotices]);
 
   const editNotice = useCallback(async (id: string, title: string, message: string) => {
-    if (id.startsWith('notice-')) {
-      setNotices(prev => prev.map(n => n.id === id ? { ...n, title, message } : n));
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('hayequipo_announcements')
@@ -137,11 +121,6 @@ export const NoticeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [fetchNotices]);
 
   const deleteNotice = useCallback(async (id: string) => {
-    if (id.startsWith('notice-')) {
-      setNotices(prev => prev.filter(n => n.id !== id));
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('hayequipo_announcements')

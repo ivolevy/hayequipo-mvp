@@ -15,9 +15,12 @@ import {
   Megaphone,
   Target,
   Utensils,
-  Download
+  Download,
+  Lock
 } from 'lucide-react';
 import { usePWA } from '@/hooks/usePWA';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 interface NavItem {
   label: string;
@@ -72,6 +75,24 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
   const location = useLocation();
   const { showInstallBtn, triggerInstall } = usePWA();
 
+  const { limits } = usePlanLimits();
+  const [isUpgradeOpen, setIsUpgradeOpen] = React.useState(false);
+  const [upgradeFeature, setUpgradeFeature] = React.useState<'nutrition' | 'physical' | 'players' | 'multiteam' | 'routines'>('nutrition');
+
+  const getNavLockFeature = (to: string): 'routines' | 'nutrition' | null => {
+    if (to === '/jugador/entrenamiento') return 'routines';
+    if (to === '/jugador/nutricion') return 'nutrition';
+    return null;
+  };
+
+  const isNavLocked = (to: string) => {
+    const feature = getNavLockFeature(to);
+    if (!feature) return false;
+    if (feature === 'routines' && !limits.hasRoutines) return true;
+    if (feature === 'nutrition' && !limits.hasNutrition) return true;
+    return false;
+  };
+
   const handleInstallClick = async () => {
     const result = await triggerInstall();
     if (result === 'ios' || result === 'unsupported') {
@@ -101,24 +122,40 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
             )}
           </div>
           <nav className="space-y-3">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                aria-label={item.label}
-                end={item.to === `/${user.role}`}
-                className={({ isActive }) =>
-                  `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm transition-all duration-300 ${
-                    isActive
-                      ? 'bg-white text-emerald-600 shadow-xl shadow-emerald-700/20'
-                      : 'text-emerald-50 hover:text-white hover:bg-white/10'
-                  }`
-                }
-              >
-                <item.icon className="w-5 h-5" aria-hidden="true" />
-                <span className="font-bold tracking-tight uppercase text-xs">{item.label}</span>
-              </NavLink>
-            ))}
+            {navItems.map((item) => {
+              const locked = isNavLocked(item.to);
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  aria-label={item.label}
+                  end={item.to === `/${user.role}`}
+                  onClick={(e) => {
+                    if (locked) {
+                      e.preventDefault();
+                      const feat = getNavLockFeature(item.to);
+                      if (feat) {
+                        setUpgradeFeature(feat);
+                        setIsUpgradeOpen(true);
+                      }
+                    }
+                  }}
+                  className={({ isActive }) =>
+                    `flex items-center justify-between w-full px-5 py-4 rounded-2xl text-sm transition-all duration-300 ${
+                      isActive && !locked
+                        ? 'bg-white text-emerald-600 shadow-xl shadow-emerald-700/20'
+                        : 'text-emerald-50 hover:text-white hover:bg-white/10'
+                    }`
+                  }
+                >
+                  <div className="flex items-center gap-4">
+                    <item.icon className="w-5 h-5" aria-hidden="true" />
+                    <span className="font-bold tracking-tight uppercase text-xs">{item.label}</span>
+                  </div>
+                  {locked && <Lock className="w-4 h-4 text-emerald-200 opacity-80" />}
+                </NavLink>
+              );
+            })}
           </nav>
         </div>
         
@@ -135,15 +172,6 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
               <div className="text-[10px] font-black text-emerald-100 uppercase tracking-widest opacity-60">Ver Perfil</div>
             </div>
           </Link>
-          {showInstallBtn && (
-            <button
-              onClick={handleInstallClick}
-              className="flex items-center gap-4 px-5 py-3.5 text-xs font-black text-emerald-50 hover:text-white transition-all w-full rounded-2xl hover:bg-white/10 uppercase tracking-widest mb-1.5"
-            >
-              <Download className="w-5 h-5" aria-hidden="true" />
-              <span>Instalar App</span>
-            </button>
-          )}
           <button
             onClick={switchTeam}
             className="flex items-center gap-4 px-5 py-3.5 text-xs font-black text-emerald-50 hover:text-white transition-all w-full rounded-2xl hover:bg-white/10 uppercase tracking-widest mb-1.5"
@@ -224,28 +252,48 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
       {/* Mobile bottom nav - Adaptive Width */}
       <nav className="md:hidden fixed bottom-8 left-4 right-4 h-20 bg-slate-900/95 backdrop-blur-2xl flex items-center justify-between z-[9999] rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] px-3 max-w-md mx-auto">
         <div className="flex items-center justify-evenly flex-1 min-w-0">
-          {navItems.filter(item => !item.hideOnMobile).map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === `/${user.role}`}
-              className={({ isActive }) => 
-                `flex items-center justify-center w-11 h-11 rounded-full transition-all duration-500 shrink-0 ${
-                  isActive ? 'bg-white shadow-lg' : 'text-white/40'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <item.icon 
-                    className={`w-[1.15rem] h-[1.15rem] transition-colors duration-300 ${isActive ? 'text-slate-900' : 'text-white/40'}`} 
-                    aria-hidden="true" 
-                  />
-                  <span className="sr-only">{item.label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+          {navItems.filter(item => !item.hideOnMobile).map((item) => {
+            const locked = isNavLocked(item.to);
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === `/${user.role}`}
+                onClick={(e) => {
+                  if (locked) {
+                    e.preventDefault();
+                    const feat = getNavLockFeature(item.to);
+                    if (feat) {
+                      setUpgradeFeature(feat);
+                      setIsUpgradeOpen(true);
+                    }
+                  }
+                }}
+                className={({ isActive }) => 
+                  `flex items-center justify-center w-11 h-11 rounded-full transition-all duration-500 shrink-0 relative ${
+                    isActive && !locked ? 'bg-white shadow-lg' : 'text-white/40'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon 
+                      className={`w-[1.15rem] h-[1.15rem] transition-colors duration-300 ${
+                        isActive && !locked ? 'text-slate-900' : 'text-white/40'
+                      }`} 
+                      aria-hidden="true" 
+                    />
+                    {locked && (
+                      <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 border border-slate-900">
+                        <Lock className="w-2 h-2" />
+                      </div>
+                    )}
+                    <span className="sr-only">{item.label}</span>
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
         </div>
         
         <div className="flex items-center shrink-0">
@@ -259,6 +307,11 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
           </button>
         </div>
       </nav>
+      <UpgradeModal 
+        isOpen={isUpgradeOpen} 
+        onClose={() => setIsUpgradeOpen(false)} 
+        feature={upgradeFeature}
+      />
     </div>
   );
 };

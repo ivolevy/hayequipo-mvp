@@ -9,11 +9,12 @@ export interface TeamMembership {
   role: UserRole;
   number?: number;
   position?: string;
+  plan?: string;
 }
 
 interface AuthContextType {
-  user: (DemoUser & { activeTeamId?: string; activeTeamName?: string; inviteCode?: string }) | null;
-  login: (user: DemoUser) => Promise<void>;
+  user: (DemoUser & { activeTeamId?: string; activeTeamName?: string; inviteCode?: string; activeTeamPlan?: string }) | null;
+  login: (user: DemoUser, planOverride?: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithCredentials: (email: string, password: string) => Promise<void>;
   signUpWithCredentials: (
@@ -121,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 2. Fetch memberships for this user
         const { data: mems, error: memsError } = await supabase
           .from('hayequipo_memberships')
-          .select('*, hayequipo_teams(name, invite_code)')
+          .select('*, hayequipo_teams(name, invite_code, plan)')
           .eq('profile_id', uid);
 
         if (memsError) throw memsError;
@@ -133,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: m.role as UserRole,
           number: m.number || undefined,
           position: m.position || undefined,
+          plan: m.hayequipo_teams?.plan || 'free',
         }));
 
         setMemberships(formattedMems);
@@ -146,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setActiveTeamId(targetTeamId);
           localStorage.setItem('hay_equipo_active_team_id', targetTeamId);
 
-          const mappedUser: DemoUser & { activeTeamId?: string; activeTeamName?: string; inviteCode?: string } = {
+          const mappedUser: DemoUser & { activeTeamId?: string; activeTeamName?: string; inviteCode?: string; activeTeamPlan?: string } = {
             id: profile.id,
             supabaseId: profile.id,
             name: profile.full_name,
@@ -160,6 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             activeTeamId: targetTeamId,
             activeTeamName: activeMem.team_name,
             inviteCode: activeMem.invite_code,
+            activeTeamPlan: activeMem.plan || 'free',
           };
           setUser(mappedUser);
           localStorage.setItem('hay_equipo_user', JSON.stringify(mappedUser));
@@ -168,7 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setActiveTeamId(null);
           localStorage.removeItem('hay_equipo_active_team_id');
 
-          const mappedUser: DemoUser & { activeTeamId?: string; activeTeamName?: string; inviteCode?: string } = {
+          const mappedUser: DemoUser & { activeTeamId?: string; activeTeamName?: string; inviteCode?: string; activeTeamPlan?: string } = {
             id: profile.id,
             supabaseId: profile.id,
             name: profile.full_name,
@@ -178,6 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             initials: getInitials(profile.full_name),
             color: profile.avatar_url || '#10B981',
             emoji: '⚽',
+            activeTeamPlan: 'free',
           };
           setUser(mappedUser);
           localStorage.setItem('hay_equipo_user', JSON.stringify(mappedUser));
@@ -262,18 +266,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = useCallback(async (u: DemoUser) => {
+  const login = useCallback(async (u: DemoUser, planOverride?: string) => {
     setIsLoggingIn(true);
     setLoginMessage(`Sincronizando con equipo...`);
     await new Promise(r => setTimeout(r, 600));
 
+    const demoIds = [
+      '11111111-1111-1111-1111-111111111111',
+      '22222222-2222-2222-2222-222222222222',
+      '33333333-3333-3333-3333-333333333333',
+      '44444444-4444-4444-4444-444444444444'
+    ];
+
+    if (!demoIds.includes(u.id)) {
+      // Dynamic user: fetch their real memberships from the database
+      await fetchUserProfile(u.id, u.email || '');
+      setIsLoggingIn(false);
+      setLoginMessage('');
+      return;
+    }
+
     // Hardcode membership for demo users so they work out of the box
     const demoTeamId = 'e0d3e922-9070-4754-a53d-47c5417f65d2';
+    const targetPlan = planOverride || 'free';
+
+    // Synchronize the team's plan in Supabase so the database is in sync
+    try {
+      await supabase
+        .from('hayequipo_teams')
+        .update({ plan: targetPlan })
+        .eq('id', demoTeamId);
+    } catch (e) {
+      console.error('Error updating demo team plan during shortcut login:', e);
+    }
+
     const mappedUser = {
       ...u,
       activeTeamId: demoTeamId,
       activeTeamName: 'Hay Equipo FC',
-      inviteCode: 'HAY123'
+      inviteCode: 'HAY123',
+      activeTeamPlan: targetPlan
     };
 
     setUser(mappedUser);
@@ -282,7 +314,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       team_id: demoTeamId,
       team_name: 'Hay Equipo FC',
       invite_code: 'HAY123',
-      role: u.role
+      role: u.role,
+      plan: targetPlan
     }]);
 
     localStorage.setItem('hay_equipo_user', JSON.stringify(mappedUser));

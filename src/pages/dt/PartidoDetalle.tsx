@@ -152,10 +152,14 @@ const PartidoDetalle = () => {
   const { players } = usePlayers();
   const { addNotice } = useNotices();
   const [showLineup, setShowLineup] = useState(false);
-  const [formation, setFormation] = useState<keyof typeof formations>(() => {
-    const saved = localStorage.getItem(`formation_${id}`);
-    return (saved as any) || '4-3-3';
-  });
+  const [formation, setFormation] = useState<keyof typeof formations>('4-3-3');
+
+  useEffect(() => {
+    if (match?.formation) {
+      setFormation(match.formation as keyof typeof formations);
+    }
+  }, [match?.formation]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const playersPerPage = 3;
@@ -627,11 +631,16 @@ const PartidoDetalle = () => {
                     <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">Esquema Táctico</span>
                     <Select 
                       value={formation}
-                      onValueChange={(val: any) => {
+                      onValueChange={async (val: any) => {
                         const newFormation = val as keyof typeof formations;
                         setFormation(newFormation);
                         if (match) {
-                          localStorage.setItem(`formation_${match.id}`, newFormation);
+                          try {
+                            await updateMatch(match.id, { formation: newFormation });
+                            toast.success(`Formación cambiada a ${newFormation}`);
+                          } catch (e) {
+                            toast.error('Error al actualizar la formación en la base de datos');
+                          }
                         }
                         setSlots(formations[newFormation].map((pos, i) => ({
                           id: i,

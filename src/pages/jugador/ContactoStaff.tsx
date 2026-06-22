@@ -27,7 +27,7 @@ const ContactoStaff = () => {
   const { user } = useAuth();
   const activeTeamId = user?.activeTeamId;
 
-  const [staff, setStaff] = useState<DemoUser[]>(() => demoUsers.filter(u => u.role !== 'jugador'));
+  const [staff, setStaff] = useState<DemoUser[]>([]);
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -42,20 +42,18 @@ const ContactoStaff = () => {
 
         if (error) throw error;
 
-        if (data && data.length > 0) {
-          const mapped: DemoUser[] = data.map(p => ({
-            id: p.id,
-            supabaseId: p.id,
-            name: p.full_name,
-            email: p.email,
-            role: p.role as UserRole,
-            roleLabel: getRoleLabel(p.role),
-            initials: getInitials(p.full_name),
-            color: p.avatar_url || '#10B981',
-            emoji: '',
-          }));
-          setStaff(mapped);
-        }
+        const mapped: DemoUser[] = (data || []).map(p => ({
+          id: p.id,
+          supabaseId: p.id,
+          name: p.full_name,
+          email: p.email,
+          role: p.role as UserRole,
+          roleLabel: getRoleLabel(p.role),
+          initials: getInitials(p.full_name),
+          color: p.avatar_url || '#10B981',
+          emoji: '',
+        }));
+        setStaff(mapped);
       } catch (err) {
         console.error('Error fetching staff contacts:', err);
       }

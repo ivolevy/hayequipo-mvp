@@ -17,9 +17,13 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "autoUpdate",
       devOptions: {
         enabled: true,
+        type: "module",
       },
       manifest: {
         name: "Hay Equipo",

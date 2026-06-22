@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Player, players as initialPlayers } from '@/data/players';
+import { Player } from '@/data/players';
 import { useAuth } from './AuthContext';
 
 interface PlayerContextType {
@@ -14,7 +14,7 @@ const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const activeTeamId = user?.activeTeamId;
-  const [playersList, setPlayersList] = useState<Player[]>(initialPlayers);
+  const [playersList, setPlayersList] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPlayers = useCallback(async () => {
@@ -47,12 +47,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       }));
 
-      // Fusionar asegurando unicidad por id (preferir datos de la base de datos)
-      const mergedMap = new Map<string, Player>();
-      initialPlayers.forEach(p => mergedMap.set(p.id, p));
-      mappedPlayers.forEach(p => mergedMap.set(p.id, p));
-
-      setPlayersList(Array.from(mergedMap.values()));
+      setPlayersList(mappedPlayers);
     } catch (error) {
       console.error('Error fetching dynamic roster:', error);
     } finally {

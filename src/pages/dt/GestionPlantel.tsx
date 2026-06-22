@@ -1,10 +1,12 @@
 import Layout from '@/components/Layout';
-import { useState, useEffect } from 'react';
-import { UserPlus, Trash2, Shield, User, Activity, Apple, Pencil, Search, X, Check, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { UserPlus, Trash2, Shield, User, Activity, Apple, Pencil, Search, X, Check, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { usePlanLimits, PricingPlan } from '@/hooks/usePlanLimits';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 interface Profile {
   id: string;
@@ -43,6 +45,24 @@ const GestionPlantel = () => {
   const { user } = useAuth();
   const activeTeamId = user?.activeTeamId;
 
+  const { plan, limits, simulateUpgrade } = usePlanLimits();
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState<'nutrition' | 'physical' | 'players' | 'multiteam' | 'routines'>('players');
+
+  const handleRoleChange = (val: 'jugador' | 'dt' | 'pf' | 'nutri' | 'admin') => {
+    if (val === 'pf' && !limits.hasPhysicalPrep) {
+      setUpgradeFeature('physical');
+      setIsUpgradeOpen(true);
+      return;
+    }
+    if (val === 'nutri' && !limits.hasNutrition) {
+      setUpgradeFeature('nutrition');
+      setIsUpgradeOpen(true);
+      return;
+    }
+    setRole(val);
+  };
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,7 +78,7 @@ const GestionPlantel = () => {
   const [number, setNumber] = useState<string>('');
   const [position, setPosition] = useState<string>('Mediocampista');
 
-  const fetchProfiles = async () => {
+  const fetchProfiles = useCallback(async () => {
     if (!activeTeamId) {
       setProfiles([]);
       setLoading(false);
@@ -73,17 +93,17 @@ const GestionPlantel = () => {
 
       if (error) throw error;
       setProfiles(data || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       toast.error('Error al cargar plantel desde base de datos');
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTeamId]);
 
   useEffect(() => {
     fetchProfiles();
-  }, [activeTeamId]);
+  }, [fetchProfiles]);
 
   const resetForm = () => {
     setName('');
@@ -104,6 +124,17 @@ const GestionPlantel = () => {
     if (!activeTeamId) {
       toast.error('No hay un equipo activo seleccionado');
       return;
+    }
+    
+    // Check player limit if changing role to player or creating a new player
+    const isAddingPlayer = !isEditing ? role === 'jugador' : (role === 'jugador' && profiles.find(p => p.id === editingId)?.role !== 'jugador');
+    if (isAddingPlayer) {
+      const playersCount = profiles.filter(p => p.role === 'jugador').length;
+      if (playersCount >= limits.maxPlayers) {
+        setUpgradeFeature('players');
+        setIsUpgradeOpen(true);
+        return;
+      }
     }
     
     const finalEmail = email.trim() || `${name.toLowerCase().replace(/\s+/g, '')}@hayequipo.com`;
@@ -139,27 +170,55 @@ const GestionPlantel = () => {
         resetForm();
         await fetchProfiles();
       } else {
-        const newId = crypto.randomUUID();
         const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
 
-        // 1. Insert global profile
-        const { error: profileError } = await supabase
+        // Check if a profile already exists with this email
+        const { data: existingProfile, error: checkError } = await supabase
           .from('hayequipo_profiles')
-          .insert({
-            id: newId,
-            full_name: name,
-            email: finalEmail,
-            role,
-            avatar_url: randomColor
-          });
+          .select('id')
+          .eq('email', finalEmail)
+          .maybeSingle();
 
-        if (profileError) throw profileError;
+        if (checkError) throw checkError;
+
+        let profileId = crypto.randomUUID();
+
+        if (existingProfile) {
+          profileId = existingProfile.id;
+          
+          // Check if already a member of this team
+          const { data: existingMem, error: checkMemError } = await supabase
+            .from('hayequipo_memberships')
+            .select('id')
+            .eq('profile_id', profileId)
+            .eq('team_id', activeTeamId)
+            .maybeSingle();
+
+          if (checkMemError) throw checkMemError;
+          if (existingMem) {
+            toast.error('El usuario con este correo ya pertenece a este equipo');
+            return;
+          }
+        } else {
+          // 1. Insert global profile since it doesn't exist
+          const { error: profileError } = await supabase
+            .from('hayequipo_profiles')
+            .insert({
+              id: profileId,
+              full_name: name,
+              email: finalEmail,
+              role,
+              avatar_url: randomColor
+            });
+
+          if (profileError) throw profileError;
+        }
 
         // 2. Insert membership
         const { error: memError } = await supabase
           .from('hayequipo_memberships')
           .insert({
-            profile_id: newId,
+            profile_id: profileId,
             team_id: activeTeamId,
             role,
             number: role === 'jugador' ? Number(number) || null : null,
@@ -172,9 +231,9 @@ const GestionPlantel = () => {
         resetForm();
         await fetchProfiles();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Error al guardar miembro');
+      toast.error(err instanceof Error ? err.message : 'Error al guardar miembro');
     }
   };
 
@@ -204,7 +263,7 @@ const GestionPlantel = () => {
           resetForm();
         }
         await fetchProfiles();
-      } catch (err: any) {
+      } catch (err) {
         console.error(err);
         toast.error('Error al eliminar miembro');
       }
@@ -228,13 +287,53 @@ const GestionPlantel = () => {
       <div className="content-width px-4 py-8 animate-fade-in max-w-6xl pb-32 space-y-8">
         
         {/* Header */}
-        <div className="px-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="px-2 flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-display text-slate-900 uppercase tracking-tight leading-none mb-2">Plantel & Staff</h1>
             <p className="text-xs text-slate-500 font-medium">Gestión del cuerpo técnico, auxiliares y jugadores del equipo.</p>
           </div>
-          <div className="bg-white border border-slate-100 px-4 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-400">
-            {profiles.length} Miembros totales
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            {/* Roster Limit Progress Bar */}
+            <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex flex-col gap-2 min-w-[220px]">
+              <div className="flex justify-between items-center text-[8px] font-black tracking-widest uppercase">
+                <span className="text-slate-400">PLAN: {limits.planName}</span>
+                {(plan === 'free' || plan === 'intermediate') && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setUpgradeFeature('players');
+                      setIsUpgradeOpen(true);
+                    }} 
+                    className="text-emerald-600 hover:text-emerald-700 font-bold"
+                  >
+                    MEJORAR
+                  </button>
+                )}
+              </div>
+              <div className="flex justify-between items-center text-[10px] font-bold text-slate-700">
+                <span>Capacidad Jugadores</span>
+                <span>
+                  {profiles.filter(p => p.role === 'jugador').length} / {limits.maxPlayers === 999 ? 'Ilimitado' : limits.maxPlayers}
+                </span>
+              </div>
+              {limits.maxPlayers !== 999 && (
+                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      (profiles.filter(p => p.role === 'jugador').length / limits.maxPlayers) >= 1 
+                        ? 'bg-rose-500' 
+                        : (profiles.filter(p => p.role === 'jugador').length / limits.maxPlayers) >= 0.8 
+                        ? 'bg-amber-500' 
+                        : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${Math.min(100, (profiles.filter(p => p.role === 'jugador').length / limits.maxPlayers) * 100)}%` }}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="bg-white border border-slate-100 px-4 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center">
+              {profiles.length} Miembros totales
+            </div>
           </div>
         </div>
 
@@ -285,7 +384,7 @@ const GestionPlantel = () => {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Rol</label>
                   <Select 
                     value={role} 
-                    onValueChange={(val: any) => setRole(val)}
+                    onValueChange={handleRoleChange}
                     disabled={isEditing && editingId === user?.supabaseId}
                   >
                     <SelectTrigger className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800 text-left">
@@ -294,8 +393,18 @@ const GestionPlantel = () => {
                     <SelectContent className="bg-white border border-slate-100 rounded-xl shadow-lg">
                       <SelectItem value="jugador">Jugador</SelectItem>
                       <SelectItem value="dt">Director Técnico</SelectItem>
-                      <SelectItem value="pf">Prep. Físico</SelectItem>
-                      <SelectItem value="nutri">Nutricionista</SelectItem>
+                      <SelectItem value="pf">
+                        <span className="flex items-center justify-between w-full gap-2">
+                          <span>Prep. Físico</span>
+                          {!limits.hasPhysicalPrep && <Lock className="w-3.5 h-3.5 text-slate-400" />}
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="nutri">
+                        <span className="flex items-center justify-between w-full gap-2">
+                          <span>Nutricionista</span>
+                          {!limits.hasNutrition && <Lock className="w-3.5 h-3.5 text-slate-400" />}
+                        </span>
+                      </SelectItem>
                       <SelectItem value="admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
@@ -353,6 +462,41 @@ const GestionPlantel = () => {
                   </button>
                 </div>
               </form>
+            </div>
+
+            {/* Demo Plan Selector */}
+            <div className="premium-card p-6 bg-slate-900 text-white border border-slate-950 shadow-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Shield className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xs tracking-tight text-white uppercase">Simulador de Planes (Demo)</h3>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Cambiar nivel del plan actual</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {(['free', 'intermediate', 'advanced', 'premium'] as PricingPlan[]).map((p) => {
+                  const label = p === 'free' ? 'Gratis' : 
+                                p === 'intermediate' ? 'Intermedio' : 
+                                p === 'advanced' ? 'Avanzado' : 'Premium';
+                  const active = plan === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => simulateUpgrade(p)}
+                      className={`py-2 px-3 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border ${
+                        active 
+                          ? 'bg-emerald-500 text-white border-emerald-400 shadow-md' 
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -478,6 +622,11 @@ const GestionPlantel = () => {
         </div>
 
       </div>
+      <UpgradeModal 
+        isOpen={isUpgradeOpen} 
+        onClose={() => setIsUpgradeOpen(false)} 
+        feature={upgradeFeature}
+      />
     </Layout>
   );
 };
