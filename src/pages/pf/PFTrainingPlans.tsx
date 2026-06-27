@@ -233,6 +233,10 @@ const PFTrainingPlans = () => {
       toast.error('Por favor ingresá un nombre para el plan');
       return;
     }
+    if (planForm.title.trim().length > 50) {
+      toast.error('El nombre del plan no puede superar los 50 caracteres');
+      return;
+    }
 
     if (isBulkMode && selectedBulkPlayerIds.length === 0) {
       toast.error('Seleccioná al menos un jugador para asignar el plan');
@@ -246,6 +250,35 @@ const PFTrainingPlans = () => {
 
     if (hasEmptyExercise) {
       toast.error('Completá el nombre de todos los ejercicios agregados');
+      return;
+    }
+
+    const hasLongExName = planForm.days.some(day => 
+      day.exercises.some(ex => ex.name.trim().length > 50)
+    );
+    if (hasLongExName) {
+      toast.error('El nombre del ejercicio no puede superar los 50 caracteres');
+      return;
+    }
+    const hasLongExSets = planForm.days.some(day => 
+      day.exercises.some(ex => ex.sets.trim().length > 20)
+    );
+    if (hasLongExSets) {
+      toast.error('Las series no pueden superar los 20 caracteres');
+      return;
+    }
+    const hasLongExReps = planForm.days.some(day => 
+      day.exercises.some(ex => ex.reps.trim().length > 20)
+    );
+    if (hasLongExReps) {
+      toast.error('Las repeticiones no pueden superar los 20 caracteres');
+      return;
+    }
+    const hasLongExRest = planForm.days.some(day => 
+      day.exercises.some(ex => ex.rest.trim().length > 20)
+    );
+    if (hasLongExRest) {
+      toast.error('El descanso no puede superar los 20 caracteres');
       return;
     }
 
@@ -425,6 +458,8 @@ const PFTrainingPlans = () => {
                 placeholder="Ej. Fuerza Explosiva, Recuperación Isquiotibial, Acondicionamiento..."
                 value={planForm.title}
                 onChange={e => setPlanForm(prev => ({ ...prev, title: e.target.value }))}
+                maxLength={50}
+                required
                 className="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all text-slate-800"
               />
             </div>
@@ -564,6 +599,8 @@ const PFTrainingPlans = () => {
                                 placeholder="Ej. Sentadilla Goblet"
                                 value={exercise.name}
                                 onChange={e => handleExerciseChange(exIdx, 'name', e.target.value)}
+                                maxLength={50}
+                                required
                                 className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all text-slate-800"
                               />
                             </td>
@@ -573,6 +610,8 @@ const PFTrainingPlans = () => {
                                 placeholder="Ej. 4"
                                 value={exercise.sets}
                                 onChange={e => handleExerciseChange(exIdx, 'sets', e.target.value)}
+                                maxLength={20}
+                                required
                                 className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all text-slate-800"
                               />
                             </td>
@@ -582,6 +621,8 @@ const PFTrainingPlans = () => {
                                 placeholder="Ej. 10 o 8-12"
                                 value={exercise.reps}
                                 onChange={e => handleExerciseChange(exIdx, 'reps', e.target.value)}
+                                maxLength={20}
+                                required
                                 className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all text-slate-800"
                               />
                             </td>
@@ -591,6 +632,7 @@ const PFTrainingPlans = () => {
                                 placeholder="Ej. 90'' o 2 min"
                                 value={exercise.rest}
                                 onChange={e => handleExerciseChange(exIdx, 'rest', e.target.value)}
+                                maxLength={20}
                                 className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all text-slate-800"
                               />
                             </td>

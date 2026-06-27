@@ -214,6 +214,10 @@ const NutriPlans = () => {
       toast.error('Por favor ingresá un nombre para el plan');
       return;
     }
+    if (planForm.title.trim().length > 50) {
+      toast.error('El nombre del plan no puede superar los 50 caracteres');
+      return;
+    }
 
     if (isBulkMode && selectedBulkPlayerIds.length === 0) {
       toast.error('Seleccioná al menos un jugador para asignar el plan');
@@ -224,6 +228,19 @@ const NutriPlans = () => {
     const hasEmptyMeals = planForm.meals.some(meal => !meal.name.trim() || !meal.food.trim());
     if (hasEmptyMeals) {
       toast.error('Completá el nombre de comida y alimentos de todas las filas');
+      return;
+    }
+
+    if (planForm.meals.some(meal => meal.name.trim().length > 30)) {
+      toast.error('El nombre de comida/momento no puede superar los 30 caracteres');
+      return;
+    }
+    if (planForm.meals.some(meal => meal.food.trim().length > 250)) {
+      toast.error('El detalle de alimentos no puede superar los 250 caracteres');
+      return;
+    }
+    if (planForm.meals.some(meal => meal.quantity.trim().length > 30)) {
+      toast.error('La porción/cantidad no puede superar los 30 caracteres');
       return;
     }
 
@@ -394,6 +411,8 @@ const NutriPlans = () => {
                 placeholder="Ej. Volumen Magro, Déficit Calórico, Dieta de Competencia..."
                 value={planForm.title}
                 onChange={e => setPlanForm(prev => ({ ...prev, title: e.target.value }))}
+                maxLength={50}
+                required
                 className="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all text-slate-800"
               />
             </div>
@@ -485,6 +504,8 @@ const NutriPlans = () => {
                             placeholder="Ej. Desayuno, Almuerzo..."
                             value={meal.name}
                             onChange={e => handleMealChange(idx, 'name', e.target.value)}
+                            maxLength={30}
+                            required
                             className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all text-slate-800"
                           />
                         </td>
@@ -494,6 +515,8 @@ const NutriPlans = () => {
                             value={meal.food}
                             rows={2}
                             onChange={e => handleMealChange(idx, 'food', e.target.value)}
+                            maxLength={250}
+                            required
                             className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all text-slate-800 resize-none"
                           />
                         </td>
@@ -503,6 +526,7 @@ const NutriPlans = () => {
                             placeholder="Ej. 1 taza avena, 4 claras"
                             value={meal.quantity}
                             onChange={e => handleMealChange(idx, 'quantity', e.target.value)}
+                            maxLength={30}
                             className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all text-slate-800"
                           />
                         </td>

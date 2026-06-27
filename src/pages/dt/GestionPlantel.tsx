@@ -121,6 +121,28 @@ const GestionPlantel = () => {
       toast.error('El nombre es obligatorio');
       return;
     }
+    if (name.trim().length > 50) {
+      toast.error('El nombre no puede superar los 50 caracteres');
+      return;
+    }
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        toast.error('Por favor ingresá un correo electrónico válido');
+        return;
+      }
+      if (email.trim().length > 100) {
+        toast.error('El correo no puede superar los 100 caracteres');
+        return;
+      }
+    }
+    if (role === 'jugador' && number) {
+      const parsedNum = Number(number);
+      if (!Number.isInteger(parsedNum) || parsedNum < 1 || parsedNum > 999) {
+        toast.error('El dorsal debe ser un número entero entre 1 y 999');
+        return;
+      }
+    }
     if (!activeTeamId) {
       toast.error('No hay un equipo activo seleccionado');
       return;
@@ -365,6 +387,8 @@ const GestionPlantel = () => {
                     placeholder="Ej: Michael Olise" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    maxLength={50}
+                    required
                     className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>
@@ -376,6 +400,8 @@ const GestionPlantel = () => {
                     placeholder="Ej: olise@hayequipo.com" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    maxLength={100}
                     className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>
@@ -434,6 +460,10 @@ const GestionPlantel = () => {
                         placeholder="Ej: 10" 
                         value={number}
                         onChange={(e) => setNumber(e.target.value)}
+                        min="1"
+                        max="999"
+                        step="1"
+                        inputMode="numeric"
                         className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                       />
                     </div>

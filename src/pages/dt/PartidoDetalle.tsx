@@ -151,6 +151,12 @@ const PartidoDetalle = () => {
   const { matches, respondConvocation, removeConvocation, setSelectionForMatch, updatePlayerPitchPosition, updateMatch, deleteMatch } = useMatches();
   const { players } = usePlayers();
   const { addNotice } = useNotices();
+
+  const match = matches.find(m => m.id === id);
+  const isReadOnly = user?.role !== 'dt';
+  const myConv = match?.convocations.find(c => c.playerId === user?.supabaseId || c.playerId === user?.playerId);
+  const isPast = match ? (match.completed || new Date(match.date).getTime() < (Date.now() - 3 * 60 * 60 * 1000)) : false;
+
   const [showLineup, setShowLineup] = useState(false);
   const [formation, setFormation] = useState<keyof typeof formations>('4-3-3');
 
@@ -166,12 +172,6 @@ const PartidoDetalle = () => {
   
   const [slots, setSlots] = useState<PitchSlot[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  
-  const match = matches.find(m => m.id === id);
-  const isReadOnly = user?.role !== 'dt';
-  const myConv = match?.convocations.find(c => c.playerId === user?.supabaseId || c.playerId === user?.playerId);
-
-  const isPast = match ? (match.completed || new Date(match.date).getTime() < (Date.now() - 3 * 60 * 60 * 1000)) : false;
 
   const [isEditing, setIsEditing] = useState(false);
   const [editRival, setEditRival] = useState('');
@@ -495,6 +495,7 @@ const PartidoDetalle = () => {
                     type="text"
                     value={editRival}
                     onChange={(e) => setEditRival(e.target.value)}
+                    maxLength={30}
                     className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>
@@ -513,6 +514,7 @@ const PartidoDetalle = () => {
                     type="text"
                     value={editVenue}
                     onChange={(e) => setEditVenue(e.target.value)}
+                    maxLength={50}
                     className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>

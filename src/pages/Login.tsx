@@ -317,9 +317,12 @@ const Login = () => {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                     <input
                       type="email"
+                      required
                       placeholder="correo@ejemplo.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
+                      autoComplete="username email"
+                      maxLength={100}
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
                     />
                   </div>
@@ -331,9 +334,11 @@ const Login = () => {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                     <input
                       type="password"
+                      required
                       placeholder="••••••••"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
+                      autoComplete="current-password"
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
                     />
                   </div>
@@ -352,7 +357,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => setMode('forgot')}
-                    className="text-[9px] font-black text-slate-400 hover:text-slate-650 transition-colors uppercase tracking-wider"
+                    className="text-[9px] font-black text-slate-400 hover:text-slate-655 transition-colors uppercase tracking-wider"
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
@@ -381,6 +386,8 @@ const Login = () => {
                       placeholder="Ej: Lionel Messi"
                       value={fullName}
                       onChange={e => setFullName(e.target.value)}
+                      autoComplete="name"
+                      maxLength={50}
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
                     />
                   </div>
@@ -396,6 +403,8 @@ const Login = () => {
                       placeholder="correo@ejemplo.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
+                      autoComplete="email"
+                      maxLength={100}
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
                     />
                   </div>
@@ -411,6 +420,9 @@ const Login = () => {
                       placeholder="Mínimo 6 caracteres"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
+                      autoComplete="new-password"
+                      minLength={6}
+                      maxLength={100}
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
                     />
                   </div>
@@ -515,6 +527,8 @@ const Login = () => {
                         placeholder="correo@ejemplo.com"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
+                        autoComplete="email"
+                        maxLength={100}
                         className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
                       />
                     </div>
@@ -532,7 +546,7 @@ const Login = () => {
                     <button
                       type="button"
                       onClick={() => setMode('login')}
-                      className="text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1"
+                      className="text-[9px] font-black text-slate-400 hover:text-slate-650 transition-colors uppercase tracking-widest flex items-center gap-1"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       VOLVER AL INICIO
@@ -587,6 +601,9 @@ const Login = () => {
                         placeholder="Mínimo 6 caracteres"
                         value={newPassword}
                         onChange={e => setNewPassword(e.target.value)}
+                        autoComplete="new-password"
+                        minLength={6}
+                        maxLength={100}
                         className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-3.5 text-xs outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all"
                       />
                     </div>

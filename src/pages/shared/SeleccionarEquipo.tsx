@@ -181,6 +181,8 @@ const SeleccionarEquipo = () => {
                   placeholder="Ej: ABC123"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
+                  maxLength={10}
+                  required
                   className="flex-1 h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800 uppercase"
                 />
                 <button
@@ -212,6 +214,8 @@ const SeleccionarEquipo = () => {
                   placeholder="Nombre del equipo"
                   value={newTeamName}
                   onChange={(e) => setNewTeamName(e.target.value)}
+                  maxLength={30}
+                  required
                   className="flex-1 h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                 />
                 <button
