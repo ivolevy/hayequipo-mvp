@@ -601,7 +601,7 @@ const Login = () => {
                 {/* Demo Plan Selector */}
                 <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl space-y-2">
                   <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">
-                    PLAN DEL EQUIPO SEMILLA PARA LA DEMO
+                    MODELOS FREEMIUM PARA LA DEMO
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {(['free', 'intermediate', 'advanced', 'premium'] as const).map((p) => {
@@ -629,29 +629,36 @@ const Login = () => {
                 
                 {/* Shortcut Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {demoUsers.map((user, i) => {
-                    const Icon = roleIcons[user.role];
-                    return (
-                      <button
-                        key={user.id}
-                        onClick={() => handleShortcutLogin(user)}
-                        style={{ animationDelay: `${i * 100}ms` }}
-                        className="premium-card p-3 text-left group hover:bg-emerald-600 border border-slate-100 hover:border-emerald-600 transition-all duration-300 flex items-center gap-3.5 bg-slate-50/50"
-                      >
-                        <div
-                          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm group-hover:bg-white/20 transition-colors"
-                          style={{ backgroundColor: user.color }}
+                  {demoUsers
+                    .filter(user => {
+                      if (demoPlan === 'free' || demoPlan === 'intermediate') {
+                        return user.role !== 'pf' && user.role !== 'nutri';
+                      }
+                      return true;
+                    })
+                    .map((user, i) => {
+                      const Icon = roleIcons[user.role];
+                      return (
+                        <button
+                          key={user.id}
+                          onClick={() => handleShortcutLogin(user)}
+                          style={{ animationDelay: `${i * 100}ms` }}
+                          className="premium-card p-3 text-left group hover:bg-emerald-600 border border-slate-100 hover:border-emerald-600 transition-all duration-300 flex items-center gap-3.5 bg-slate-50/50"
                         >
-                          <Icon className="w-4 h-4 text-white" aria-hidden="true" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-display text-xs text-slate-800 group-hover:text-white transition-colors uppercase tracking-tight truncate">{user.name}</div>
-                          <div className="text-[7.5px] font-black text-slate-400 group-hover:text-emerald-100 uppercase tracking-widest mt-0.5 transition-colors">{user.roleLabel}</div>
-                        </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                      </button>
-                    );
-                  })}
+                          <div
+                            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm group-hover:bg-white/20 transition-colors"
+                            style={{ backgroundColor: user.color }}
+                          >
+                            <Icon className="w-4 h-4 text-white" aria-hidden="true" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-display text-xs text-slate-800 group-hover:text-white transition-colors uppercase tracking-tight truncate">{user.name}</div>
+                            <div className="text-[7.5px] font-black text-slate-400 group-hover:text-emerald-100 uppercase tracking-widest mt-0.5 transition-colors">{user.roleLabel}</div>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             )}
