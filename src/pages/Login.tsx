@@ -76,52 +76,7 @@ const Login = () => {
   const [resetPasswordOtpToken, setResetPasswordOtpToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-  // Roster profiles loaded dynamically
-  const [dbMembers, setDbMembers] = useState<DemoUser[]>([]);
-  const [loadingMembers, setLoadingMembers] = useState(false);
-  const [showRosterSelect, setShowRosterSelect] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [demoPlan, setDemoPlan] = useState<'free' | 'intermediate' | 'advanced' | 'premium'>('free');
-
-  useEffect(() => {
-    const fetchRoster = async () => {
-      setLoadingMembers(true);
-      try {
-        const { data, error } = await supabase
-          .from('hayequipo_profiles')
-          .select('id, full_name, role, avatar_url, email')
-          .order('full_name', { ascending: true });
-
-        if (error) throw error;
-
-        if (data) {
-          const mapped: DemoUser[] = data.map(p => ({
-            id: p.id,
-            supabaseId: p.id,
-            name: p.full_name,
-            email: p.email,
-            role: p.role as UserRole,
-            roleLabel: getRoleLabel(p.role),
-            initials: getInitials(p.full_name),
-            color: p.avatar_url || '#10B981',
-            emoji: getRoleEmoji(p.role),
-            playerId: p.role === 'jugador' ? p.id : undefined
-          }));
-          
-          // Exclude hardcoded demo users to avoid duplicate shortcuts
-          const demoSupabaseIds = demoUsers.map(u => u.supabaseId);
-          const filtered = mapped.filter(u => !demoSupabaseIds.includes(u.supabaseId));
-          setDbMembers(filtered);
-        }
-      } catch (err) {
-        console.error('Error fetching roster for login:', err);
-      } finally {
-        setLoadingMembers(false);
-      }
-    };
-
-    fetchRoster();
-  }, []);
 
   // Load remembered email
   useEffect(() => {
@@ -698,52 +653,6 @@ const Login = () => {
                     );
                   })}
                 </div>
-
-                {/* Dynamic selector for other roster members */}
-                {dbMembers.length > 0 && (
-                  <div className="pt-5 border-t border-slate-100/80 space-y-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowRosterSelect(!showRosterSelect)}
-                      className="w-full flex items-center justify-between py-1 text-left text-[9px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-[0.2em]"
-                    >
-                      <span>Ingresar como otro miembro del plantel ({dbMembers.length})</span>
-                      <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-250 ${showRosterSelect ? 'rotate-90' : ''}`} />
-                    </button>
-
-                    {showRosterSelect && (
-                      <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                        <div className="relative">
-                          <select
-                            value={selectedMemberId}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSelectedMemberId(val);
-                              const found = dbMembers.find(m => m.id === val);
-                              if (found) {
-                                handleShortcutLogin(found);
-                              }
-                            }}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 pr-10 text-xs font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white focus:border-emerald-500/35 transition-all text-slate-700 appearance-none cursor-pointer"
-                          >
-                            <option value="">-- Seleccionar miembro del plantel --</option>
-                            {dbMembers.map(member => (
-                              <option key={member.id} value={member.id}>
-                                {member.name} ({getRoleLabel(member.role)})
-                              </option>
-                            ))}
-                          </select>
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <ChevronRight className="w-4 h-4 rotate-90" />
-                          </div>
-                        </div>
-                        <p className="text-[8.5px] text-slate-400/80 font-medium uppercase tracking-wider leading-relaxed px-1">
-                          * Haz clic sobre un miembro creado por el DT para simular su inicio de sesión al instante.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>
