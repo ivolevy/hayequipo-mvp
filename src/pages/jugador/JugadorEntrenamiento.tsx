@@ -2,7 +2,9 @@ import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { usePlayers } from '@/context/PlayerContext';
-import { Dumbbell, ChevronRight, CheckCircle2, Calendar, Clock, RotateCcw } from 'lucide-react';
+import { Dumbbell, ChevronRight, CheckCircle2, Calendar, Clock, RotateCcw, Lock } from 'lucide-react';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 interface Exercise {
   name: string;
@@ -39,12 +41,45 @@ const parseTrainingPlan = (planStr?: string): TrainingPlanJSON | null => {
 const JugadorEntrenamiento = () => {
   const { user } = useAuth();
   const { players } = usePlayers();
+  const { limits } = usePlanLimits();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const playerData = players.find(p => p.id === user?.playerId || p.id === user?.id);
 
   const [activeDayIdx, setActiveDayIdx] = useState(0);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
 
   if (!playerData) return null;
+
+  if (!limits.hasPhysicalPrep) {
+    return (
+      <Layout title="Mi Entrenamiento">
+        <div className="content-width px-4 py-16 animate-fade-in max-w-lg mx-auto flex flex-col items-center justify-center text-center gap-6 pb-32">
+          <div className="w-20 h-20 rounded-3xl bg-slate-100 border border-slate-200 flex items-center justify-center shadow-sm">
+            <Lock className="w-9 h-9 text-slate-400" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="font-display text-xl text-slate-900 uppercase tracking-tight">Entrenamiento Bloqueado</h1>
+            <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">
+              Las rutinas personalizadas del Prep. Físico están disponibles a partir del <strong className="text-slate-600">Plan Avanzado</strong>. Actualizá el plan de tu equipo para acceder.
+            </p>
+          </div>
+          <button
+            onClick={() => setUpgradeOpen(true)}
+            className="bg-slate-900 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest px-6 py-3.5 rounded-xl transition-all shadow-md active:scale-95"
+          >
+            Ver Planes Disponibles
+          </button>
+          <div className="w-full bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-6 space-y-3 opacity-40 pointer-events-none select-none">
+            <div className="h-3 bg-slate-200 rounded-full w-1/2" />
+            <div className="h-8 bg-slate-100 rounded-xl w-full" />
+            <div className="h-8 bg-slate-100 rounded-xl w-full" />
+            <div className="h-8 bg-slate-100 rounded-xl w-4/5" />
+          </div>
+        </div>
+        <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="physical" />
+      </Layout>
+    );
+  }
 
   const rawTrainingPlan = playerData.activePlans?.training;
   const structuredPlan = parseTrainingPlan(rawTrainingPlan);

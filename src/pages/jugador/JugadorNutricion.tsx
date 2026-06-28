@@ -1,8 +1,11 @@
 import Layout from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { usePlayers } from '@/context/PlayerContext';
-import { Apple, Utensils, Info } from 'lucide-react';
+import { Apple, Utensils, Info, Lock } from 'lucide-react';
 import { useNutri } from '@/context/NutriContext';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { UpgradeModal } from '@/components/UpgradeModal';
+import { useState } from 'react';
 
 interface NutritionMeal {
   name: string;
@@ -34,10 +37,42 @@ const JugadorNutricion = () => {
   const { user } = useAuth();
   const { recommendations, playerPlans } = useNutri();
   const { players } = usePlayers();
+  const { limits } = usePlanLimits();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const playerData = players.find(p => p.id === user?.playerId || p.id === user?.id) || players[0];
   const myPlan = playerPlans[playerData.id];
 
   const structuredPlan = parseNutritionPlan(myPlan?.goal);
+
+  if (!limits.hasNutrition) {
+    return (
+      <Layout title="Mi Nutrición">
+        <div className="content-width px-4 py-16 animate-fade-in max-w-lg mx-auto flex flex-col items-center justify-center text-center gap-6 pb-32">
+          <div className="w-20 h-20 rounded-3xl bg-amber-50 border border-amber-100 flex items-center justify-center shadow-sm">
+            <Lock className="w-9 h-9 text-amber-400" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="font-display text-xl text-slate-900 uppercase tracking-tight">Nutrición Bloqueada</h1>
+            <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">
+              Los planes nutricionales personalizados están disponibles a partir del <strong className="text-slate-600">Plan Avanzado</strong>. Actualizá el plan de tu equipo para acceder.
+            </p>
+          </div>
+          <button
+            onClick={() => setUpgradeOpen(true)}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] uppercase tracking-widest px-6 py-3.5 rounded-xl transition-all shadow-md shadow-amber-200/50 active:scale-95"
+          >
+            Ver Planes Disponibles
+          </button>
+          <div className="w-full bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-6 space-y-2 opacity-40 pointer-events-none select-none">
+            <div className="h-3 bg-slate-200 rounded-full w-2/3 mx-auto" />
+            <div className="h-2 bg-slate-100 rounded-full w-1/2 mx-auto" />
+            <div className="h-2 bg-slate-100 rounded-full w-3/4 mx-auto" />
+          </div>
+        </div>
+        <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} feature="nutrition" />
+      </Layout>
+    );
+  }
 
   return (
     <Layout title="Mi Nutrición">

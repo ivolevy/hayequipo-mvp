@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { Trophy, Target, Zap, Clock, CalendarDays, MapPin, ChevronRight, Megaphone, Apple, Utensils, Info, Check, X, Dumbbell, Activity } from 'lucide-react';
+import { Trophy, Target, Zap, Clock, CalendarDays, MapPin, ChevronRight, Megaphone, Apple, Utensils, Info, Check, X, Dumbbell, Activity, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useMatches } from '@/context/MatchContext';
 import { useNotices } from '@/context/NoticeContext';
 import { useNutri } from '@/context/NutriContext';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -74,8 +76,16 @@ const JugadorDashboard = () => {
   const { matches, respondConvocation } = useMatches();
   const { notices } = useNotices();
   const { objectives } = useNutri();
+  const { limits } = usePlanLimits();
   const [showNotice, setShowNotice] = useState(false);
   const [showConvocatoria, setShowConvocatoria] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState<'nutrition' | 'physical'>('nutrition');
+
+  const openUpgrade = (feature: 'nutrition' | 'physical') => {
+    setUpgradeFeature(feature);
+    setUpgradeOpen(true);
+  };
   
   const standardNotices = notices.filter(n => n.type !== 'convocatoria');
   const convocatoriaNotices = notices.filter(n => n.type === 'convocatoria');
@@ -377,7 +387,24 @@ const JugadorDashboard = () => {
             </div>
 
             {/* Plan de Entrenamiento Card */}
-            <div className="premium-card p-6 bg-white border border-slate-100 hover:border-emerald-250 transition-all duration-300 group">
+            <div className="premium-card p-6 bg-white border border-slate-100 transition-all duration-300 group relative overflow-hidden">
+              {!limits.hasPhysicalPrep && (
+                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-[3px] flex flex-col items-center justify-center gap-3 rounded-[inherit]">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <div className="text-center px-4">
+                    <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Plan Avanzado requerido</p>
+                    <p className="text-[9px] text-slate-400 font-medium mt-0.5">Rutinas personalizadas del Prep. Físico</p>
+                  </div>
+                  <button
+                    onClick={() => openUpgrade('physical')}
+                    className="bg-slate-900 hover:bg-emerald-600 text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all"
+                  >
+                    Ver planes
+                  </button>
+                </div>
+              )}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shrink-0 shadow-md">
@@ -436,7 +463,24 @@ const JugadorDashboard = () => {
             </div>
 
             {/* Plan Nutricional Card */}
-            <div className="premium-card p-6 bg-white border border-slate-100 hover:border-emerald-250 transition-all duration-300 group">
+            <div className="premium-card p-6 bg-white border border-slate-100 transition-all duration-300 group relative overflow-hidden">
+              {!limits.hasNutrition && (
+                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-[3px] flex flex-col items-center justify-center gap-3 rounded-[inherit]">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div className="text-center px-4">
+                    <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Plan Avanzado requerido</p>
+                    <p className="text-[9px] text-slate-400 font-medium mt-0.5">Planes nutricionales del Nutricionista</p>
+                  </div>
+                  <button
+                    onClick={() => openUpgrade('nutrition')}
+                    className="bg-amber-500 hover:bg-amber-600 text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all"
+                  >
+                    Ver planes
+                  </button>
+                </div>
+              )}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-md">
@@ -501,6 +545,11 @@ const JugadorDashboard = () => {
         </div>
 
       </div>
+      <UpgradeModal
+        isOpen={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        feature={upgradeFeature}
+      />
     </Layout>
   );
 };
