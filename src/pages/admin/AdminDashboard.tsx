@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNavigate, Link } from 'react-router-dom';
 import { useNotices } from '@/context/NoticeContext';
+import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CalendarDays, MapPin, Users, ChevronRight, Megaphone } from 'lucide-react';
@@ -19,7 +20,7 @@ const AdminDashboard = () => {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 3);
 
-  const activeTeamId = matches[0]?.team_id || localStorage.getItem('hay_equipo_active_team_id');
+  const { activeTeamId } = useAuth();
   const activeTeamName = localStorage.getItem('hay_equipo_user') 
     ? JSON.parse(localStorage.getItem('hay_equipo_user')!).activeTeamName 
     : 'Mi Equipo';
@@ -149,7 +150,7 @@ const AdminDashboard = () => {
                         </span>
                       </div>
                       <p className="text-[10px] text-slate-400 leading-relaxed">
-                        {notice.content}
+                        {notice.message}
                       </p>
                     </div>
                   ))}

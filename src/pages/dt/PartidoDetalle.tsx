@@ -7,7 +7,7 @@ import { usePlayers } from '@/context/PlayerContext';
 import { Player } from '@/data/players';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarDays, MapPin, Shield, Users, Trash2, ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react';
+import { CalendarDays, MapPin, Shield, Users, Trash2, ChevronLeft, ChevronRight, Pencil, X, Check } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 import FootballPitch from '@/components/FootballPitch';
 import { toast } from 'sonner';

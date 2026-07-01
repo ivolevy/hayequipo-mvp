@@ -7,13 +7,13 @@ export const showSystemNotification = (title: string, options?: NotificationOpti
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
 
-  const defaultOptions: NotificationOptions = {
+  const defaultOptions: any = {
     icon: '/logopwa.png',
     badge: '/logopwa.png',
     vibrate: [200, 100, 200],
   };
 
-  const finalOptions = { ...defaultOptions, ...options };
+  const finalOptions = { ...defaultOptions, ...options } as any;
 
   // Try to use Service Worker registration (required for background / lock screen on mobile)
   if ('serviceWorker' in navigator) {
