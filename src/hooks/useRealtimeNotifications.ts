@@ -156,7 +156,7 @@ export const useRealtimeNotifications = () => {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'hayequipo_notices',
+          table: 'hayequipo_announcements',
           filter: `team_id=eq.${user.activeTeamId}`,
         },
         (payload) => {

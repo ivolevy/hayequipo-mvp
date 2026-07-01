@@ -55,4 +55,16 @@ export const demoUsers: DemoUser[] = [
     color: '#4B2FCF',
     emoji: '🏃',
   },
+  {
+    id: 'enzomussi-demo-id-9999-8888',
+    supabaseId: 'enzomussi-demo-id-9999-8888',
+    name: 'Enzo Mussi',
+    email: 'enzomussi@gmail.com',
+    role: 'jugador',
+    roleLabel: 'Jugador',
+    initials: 'EM',
+    color: '#10B981',
+    emoji: '⚽',
+    playerId: 'enzomussi-demo-id-9999-8888',
+  },
 ];
