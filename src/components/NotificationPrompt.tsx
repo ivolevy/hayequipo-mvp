@@ -7,9 +7,13 @@ export const NotificationPrompt: React.FC = () => {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    // Only show if the user needs to grant permission and hasn't dismissed it in this session
+    const isStandalone = 
+      window.matchMedia('(display-mode: standalone)').matches || 
+      (window.navigator as any).standalone === true;
+
+    // Only show if running in standalone mode (PWA), user needs to grant permission, and hasn't dismissed it
     const isDismissed = sessionStorage.getItem('hay_equipo_notifications_dismissed') === 'true';
-    if (needsPermission && !isDismissed) {
+    if (isStandalone && needsPermission && !isDismissed) {
       // Delay showing it slightly for a smoother entry
       const timer = setTimeout(() => setShowPrompt(true), 2500);
       return () => clearTimeout(timer);
