@@ -68,7 +68,8 @@ const AppRoutes = () => {
     const isAllowedRoute = 
       location.pathname === homeRoute || 
       location.pathname.startsWith(`${homeRoute}/`) ||
-      location.pathname === '/perfil';
+      location.pathname === '/perfil' ||
+      location.pathname === '/seleccionar-equipo';
 
     if (!isAllowedRoute) {
       navigate(homeRoute, { replace: true });
