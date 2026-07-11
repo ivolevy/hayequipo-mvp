@@ -148,7 +148,7 @@ const PartidoDetalle = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { matches, respondConvocation, removeConvocation, setSelectionForMatch, updatePlayerPitchPosition, updateMatch, deleteMatch } = useMatches();
+  const { matches, loading: matchesLoading, respondConvocation, removeConvocation, setSelectionForMatch, updatePlayerPitchPosition, updateMatch, deleteMatch } = useMatches();
   const { players } = usePlayers();
   const { addNotice } = useNotices();
 
@@ -270,6 +270,16 @@ const PartidoDetalle = () => {
 
     setSlots(baseSlots);
   }, [match?.id, match?.convocations, formation]);
+
+  if (matchesLoading) {
+    return (
+      <Layout title="Cargando partido..." showBack backTo={isReadOnly ? "/jugador" : "/dt"}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!match) return <NotFound />;
 

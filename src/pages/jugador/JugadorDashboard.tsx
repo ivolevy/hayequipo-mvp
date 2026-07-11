@@ -73,7 +73,7 @@ const parseNutritionPlan = (planStr?: string): NutritionPlanJSON | null => {
 
 const JugadorDashboard = () => {
   const { user } = useAuth();
-  const { matches, respondConvocation } = useMatches();
+  const { matches, loading: matchesLoading, respondConvocation } = useMatches();
   const { notices } = useNotices();
   const { objectives } = useNutri();
   const { limits } = usePlanLimits();
@@ -264,7 +264,11 @@ const JugadorDashboard = () => {
               </Link>
             </div>
 
-            {nextMatch ? (
+            {matchesLoading ? (
+              <div className="premium-card p-8 bg-white border border-slate-100 text-center flex flex-col items-center justify-center min-h-[260px]">
+                <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : nextMatch ? (
               <div className="premium-card p-6 bg-white border border-slate-150 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[260px] group">
                 <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity pointer-events-none">
                   <Trophy className="w-40 h-40 rotate-12 text-emerald-950" />

@@ -10,7 +10,7 @@ import { CalendarDays, MapPin, Users, PlusCircle, ChevronRight, Activity, Megaph
 import { toast } from 'sonner';
 
 const DTDashboard = () => {
-  const { matches } = useMatches();
+  const { matches, loading: matchesLoading } = useMatches();
   const { notices } = useNotices();
   const navigate = useNavigate();
 
@@ -75,7 +75,11 @@ const DTDashboard = () => {
             </button>
           </div>
           
-          {nextMatches.length === 0 ? (
+          {matchesLoading ? (
+            <div className="flex items-center justify-center min-h-[120px] bg-white border border-slate-100 rounded-2xl">
+              <div className="w-6 h-6 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : nextMatches.length === 0 ? (
             <div className="premium-card p-8 md:p-16 text-center border-dashed bg-white border-slate-200">
               <CalendarDays className="w-8 h-8 text-slate-200 mx-auto mb-2" />
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No hay compromisos agendados</p>
