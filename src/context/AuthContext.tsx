@@ -92,6 +92,14 @@ const sendWelcomeEmail = async (userName: string, userEmail: string) => {
     return;
   }
 
+  // Validar que el email no esté vacío y tenga formato correcto
+  if (!userEmail || !userEmail.includes('@')) {
+    console.error('Intento de envío abortado: El email de destino es inválido o está vacío:', userEmail);
+    return;
+  }
+
+  console.log('Intentando enviar correo de bienvenida a:', userEmail, 'para el usuario:', userName);
+
   try {
     const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST',
