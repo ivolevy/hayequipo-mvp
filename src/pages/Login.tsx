@@ -169,7 +169,12 @@ const Login = () => {
         toast.success('Registro completado con éxito');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Error al registrarse');
+      const errMsg = err.message || '';
+      if (errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('email limit') || err.status === 429) {
+        toast.error('Límite de registro excedido en Supabase. Podés ingresar usando los atajos rápidos de prueba abajo.');
+      } else {
+        toast.error(errMsg || 'Error al registrarse');
+      }
     }
   };
 

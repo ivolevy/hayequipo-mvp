@@ -76,6 +76,50 @@ const getInitials = (name: string) => {
     .substring(0, 2);
 };
 
+const sendWelcomeEmail = async (userName: string, userEmail: string) => {
+  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+  if (
+    !serviceId || 
+    !templateId || 
+    !publicKey || 
+    templateId.includes('your_template_id_here') || 
+    publicKey.includes('your_public_key_here')
+  ) {
+    console.warn('EmailJS no está completamente configurado en las variables de entorno.');
+    return;
+  }
+
+  try {
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        service_id: serviceId,
+        template_id: templateId,
+        user_id: publicKey,
+        template_params: {
+          user_name: userName,
+          user_email: userEmail,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`EmailJS API error: ${response.status} - ${errorText}`);
+    }
+    console.log('Email de bienvenida enviado con éxito.');
+  } catch (error) {
+    console.error('Error al enviar el email de bienvenida:', error);
+  }
+};
+
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<DemoUser | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -372,6 +416,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if session is established (email confirmation is disabled)
       if (data.session) {
         await fetchUserProfile(data.user.id, email);
+        // Send welcome email in background
+        sendWelcomeEmail(fullName, email).catch(err => console.error("Error en welcome email:", err));
         return { sessionRequired: false };
       }
 
@@ -426,6 +472,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       await fetchUserProfile(data.user.id, email);
+      // Send welcome email in background
+      sendWelcomeEmail(fullName, email).catch(err => console.error("Error en welcome email:", err));
     } catch (err: any) {
       console.error('Error verifying OTP:', err);
       throw err;
