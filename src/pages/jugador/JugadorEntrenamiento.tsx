@@ -40,13 +40,23 @@ const parseTrainingPlan = (planStr?: string): TrainingPlanJSON | null => {
 
 const JugadorEntrenamiento = () => {
   const { user } = useAuth();
-  const { players } = usePlayers();
+  const { players, loading } = usePlayers();
   const { limits } = usePlanLimits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const playerData = players.find(p => p.id === user?.playerId || p.id === user?.id);
 
   const [activeDayIdx, setActiveDayIdx] = useState(0);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
+
+  if (loading) {
+    return (
+      <Layout title="Mi Entrenamiento">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!playerData) return null;
 

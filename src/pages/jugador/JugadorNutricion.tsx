@@ -36,12 +36,33 @@ const parseNutritionPlan = (planStr?: string): NutritionPlanJSON | null => {
 const JugadorNutricion = () => {
   const { user } = useAuth();
   const { recommendations, playerPlans } = useNutri();
-  const { players } = usePlayers();
+  const { players, loading: playersLoading } = usePlayers();
   const { limits } = usePlanLimits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const playerData = players.find(p => p.id === user?.playerId || p.id === user?.id) || players[0];
-  const myPlan = playerPlans[playerData.id];
 
+  if (playersLoading) {
+    return (
+      <Layout title="Mi Nutrición">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
+  const playerData = players.find(p => p.id === user?.playerId || p.id === user?.id) || players[0];
+  
+  if (!playerData) {
+    return (
+      <Layout title="Mi Nutrición">
+        <div className="flex items-center justify-center min-h-[200px] text-slate-400 text-xs font-semibold">
+          No se encontró perfil de jugador
+        </div>
+      </Layout>
+    );
+  }
+
+  const myPlan = playerPlans[playerData.id];
   const structuredPlan = parseNutritionPlan(myPlan?.goal);
 
   if (!limits.hasNutrition) {
