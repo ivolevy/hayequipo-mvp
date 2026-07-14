@@ -365,18 +365,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         });
 
-        // Set the active team (use the saved one, or the default one, or the first one)
-        const savedActive = localStorage.getItem('hay_equipo_active_team_id');
-        const activeMem = formattedMems.find(m => m.team_id === savedActive) || 
-                          formattedMems.find(m => m.team_id === defaultTeamId) || 
+        // For demo shortcuts, always force the active team to "Hay Equipo FC" (defaultTeamId)
+        // so the presentation walkthrough remains consistent across all demo roles.
+        const activeMem = formattedMems.find(m => m.team_id === defaultTeamId) || 
                           formattedMems[0];
 
         // If the demo plan override is passed, update that team's plan in DB and locally
-        if (planOverride) {
+        if (planOverride && activeMem.team_id === defaultTeamId) {
           await supabase
             .from('hayequipo_teams')
             .update({ plan: planOverride })
-            .eq('id', activeMem.team_id);
+            .eq('id', defaultTeamId);
           activeMem.plan = planOverride;
         }
 
