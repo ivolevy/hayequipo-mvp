@@ -7,13 +7,16 @@ export const NotificationPrompt: React.FC = () => {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
+    // Check if running on mobile/tablet device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     const isStandalone = 
       window.matchMedia('(display-mode: standalone)').matches || 
       (window.navigator as any).standalone === true;
 
-    // Only show if running in standalone mode (PWA), user needs to grant permission, and hasn't dismissed it
+    // Only show if running on mobile, in standalone mode (PWA), user needs to grant permission, and hasn't dismissed it
     const isDismissed = sessionStorage.getItem('hay_equipo_notifications_dismissed') === 'true';
-    if (isStandalone && needsPermission && !isDismissed) {
+    if (isMobile && isStandalone && needsPermission && !isDismissed) {
       // Delay showing it slightly for a smoother entry
       const timer = setTimeout(() => setShowPrompt(true), 2500);
       return () => clearTimeout(timer);
