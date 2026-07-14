@@ -95,15 +95,7 @@ const ContactoStaff = () => {
           ))}
         </div>
 
-        <div className="card-surface p-6 bg-secondary/20 border-dashed border-border flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center border border-border">
-            <MapPin className="w-5 h-5 text-muted-foreground" />
-          </div>
-          <div>
-            <div className="font-bold text-sm">Sede Central</div>
-            <div className="text-xs text-muted-foreground">Av. de los Incas 1234, CABA</div>
-          </div>
-        </div>
+
       </div>
     </Layout>
   );
