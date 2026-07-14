@@ -162,6 +162,8 @@ const GestionPlantel = () => {
     const finalEmail = email.trim() || `${name.toLowerCase().replace(/\s+/g, '')}@hayequipo.com`;
 
     try {
+      const dbRole = role === 'admin' ? 'dt' : role;
+
       if (isEditing && editingId) {
         // 1. Update global profile
         const { error: profileError } = await supabase
@@ -169,7 +171,7 @@ const GestionPlantel = () => {
           .update({
             full_name: name,
             email: finalEmail,
-            role
+            role: dbRole
           })
           .eq('id', editingId);
 
@@ -179,7 +181,7 @@ const GestionPlantel = () => {
         const { error: memError } = await supabase
           .from('hayequipo_memberships')
           .update({
-            role,
+            role: dbRole,
             number: role === 'jugador' ? Number(number) || null : null,
             position: role === 'jugador' ? position : null
           })
@@ -229,7 +231,7 @@ const GestionPlantel = () => {
               id: profileId,
               full_name: name,
               email: finalEmail,
-              role,
+              role: dbRole,
               avatar_url: randomColor
             });
 
@@ -242,7 +244,7 @@ const GestionPlantel = () => {
           .insert({
             profile_id: profileId,
             team_id: activeTeamId,
-            role,
+            role: dbRole,
             number: role === 'jugador' ? Number(number) || null : null,
             position: role === 'jugador' ? position : null
           });

@@ -179,15 +179,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (memsError) throw memsError;
 
-        const formattedMems: TeamMembership[] = (mems || []).map(m => ({
-          team_id: m.team_id,
-          team_name: m.hayequipo_teams?.name || 'Equipo sin nombre',
-          invite_code: m.hayequipo_teams?.invite_code || '',
-          role: m.role as UserRole,
-          number: m.number || undefined,
-          position: m.position || undefined,
-          plan: m.hayequipo_teams?.plan || 'free',
-        }));
+        const formattedMems: TeamMembership[] = (mems || []).map(m => {
+          const teamInfo = Array.isArray(m.hayequipo_teams)
+            ? m.hayequipo_teams[0]
+            : m.hayequipo_teams;
+
+          return {
+            team_id: m.team_id,
+            team_name: teamInfo?.name || 'Equipo sin nombre',
+            invite_code: teamInfo?.invite_code || '',
+            role: (m.role === 'admin' ? 'dt' : m.role) as UserRole,
+            number: m.number || undefined,
+            position: m.position || undefined,
+            plan: teamInfo?.plan || 'free',
+          };
+        });
 
         setMemberships(formattedMems);
 
@@ -603,7 +609,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert({
           profile_id: user.supabaseId,
           team_id: newTeam.id,
-          role: 'admin' // Creator is the Admin
+          role: 'dt' // Creator is the DT/Coach
         });
 
       if (memError) throw memError;
