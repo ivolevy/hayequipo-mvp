@@ -87,7 +87,21 @@ const JugadorDashboard = () => {
     setUpgradeOpen(true);
   };
   
-  const standardNotices = notices.filter(n => n.type !== 'convocatoria');
+  const [discardedNoticeIds, setDiscardedNoticeIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('hay_equipo_discarded_notices') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const handleDiscardNotice = (noticeId: string) => {
+    const nextIds = [...discardedNoticeIds, noticeId];
+    setDiscardedNoticeIds(nextIds);
+    localStorage.setItem('hay_equipo_discarded_notices', JSON.stringify(nextIds));
+  };
+
+  const standardNotices = notices.filter(n => n.type !== 'convocatoria' && !discardedNoticeIds.includes(n.id));
   const convocatoriaNotices = notices.filter(n => n.type === 'convocatoria');
   
   const [playerProfile, setPlayerProfile] = useState<any>(null);
@@ -237,12 +251,22 @@ const JugadorDashboard = () => {
             {showNotice && (
               <div className="space-y-4 animate-in slide-in-from-top-4 duration-300">
                 {standardNotices.map(notice => (
-                  <div key={notice.id} className="premium-card p-6 border-l-4 border-l-rose-500 bg-white">
-                    <div className="flex justify-between items-start mb-2">
+                  <div key={notice.id} className="premium-card p-6 border-l-4 border-l-rose-500 bg-white relative">
+                    <div className="flex justify-between items-start mb-2 pr-6">
                       <h3 className="font-display text-base text-slate-900 uppercase tracking-tight">{notice.title}</h3>
-                      <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">
-                        {format(new Date(notice.date), "d MMM", { locale: es })}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[8px] font-black text-slate-350 uppercase tracking-widest">
+                          {format(new Date(notice.date), "d MMM", { locale: es })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDiscardNotice(notice.id)}
+                          className="p-1 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title="Descartar comunicado"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-wrap">{notice.message}</p>
                   </div>
