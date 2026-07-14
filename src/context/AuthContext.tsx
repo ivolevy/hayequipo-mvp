@@ -365,35 +365,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         });
 
-        // For demo shortcuts, always force the active team to "Hay Equipo FC" (defaultTeamId)
-        // so the presentation walkthrough remains consistent across all demo roles.
-        const activeMem = formattedMems.find(m => m.team_id === defaultTeamId) || 
-                          formattedMems[0];
+        // For demo shortcuts, always force redirecting to the "Elegir equipo" screen
+        // by leaving activeTeamId null and clearing it from localStorage.
+        localStorage.removeItem('hay_equipo_active_team_id');
 
-        // If the demo plan override is passed, update that team's plan in DB and locally
-        if (planOverride && activeMem.team_id === defaultTeamId) {
+        // If the demo plan override is passed, update default team plan in DB
+        if (planOverride) {
           await supabase
             .from('hayequipo_teams')
             .update({ plan: planOverride })
             .eq('id', defaultTeamId);
-          activeMem.plan = planOverride;
         }
 
         const mappedUser = {
           ...u,
-          activeTeamId: activeMem.team_id,
-          activeTeamName: activeMem.team_name,
-          inviteCode: activeMem.invite_code,
-          activeTeamPlan: activeMem.plan || 'free',
-          role: activeMem.role,
+          activeTeamId: undefined,
+          activeTeamName: undefined,
+          inviteCode: undefined,
+          activeTeamPlan: undefined,
+          role: u.role,
         };
 
         setUser(mappedUser);
-        setActiveTeamId(activeMem.team_id);
+        setActiveTeamId(null);
         setMemberships(formattedMems);
 
         localStorage.setItem('hay_equipo_user', JSON.stringify(mappedUser));
-        localStorage.setItem('hay_equipo_active_team_id', activeMem.team_id);
         setIsLoggingIn(false);
         setLoginMessage('');
         return;
@@ -406,14 +403,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fallbackPlan = planOverride || 'free';
     const fallbackUser = {
       ...u,
-      activeTeamId: defaultTeamId,
-      activeTeamName: 'Hay Equipo FC',
-      inviteCode: 'HAY123',
-      activeTeamPlan: fallbackPlan
+      activeTeamId: undefined,
+      activeTeamName: undefined,
+      inviteCode: undefined,
+      activeTeamPlan: undefined
     };
 
     setUser(fallbackUser);
-    setActiveTeamId(defaultTeamId);
+    setActiveTeamId(null);
     setMemberships([{
       team_id: defaultTeamId,
       team_name: 'Hay Equipo FC',
@@ -423,7 +420,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }]);
 
     localStorage.setItem('hay_equipo_user', JSON.stringify(fallbackUser));
-    localStorage.setItem('hay_equipo_active_team_id', defaultTeamId);
+    localStorage.removeItem('hay_equipo_active_team_id');
     setIsLoggingIn(false);
     setLoginMessage('');
   }, []);
