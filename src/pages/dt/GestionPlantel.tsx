@@ -618,11 +618,7 @@ const GestionPlantel = () => {
                               <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${roleColors[p.role]}`}>
                                 {roleLabels[p.role]}
                               </span>
-                              {p.role === 'jugador' && p.position && (
-                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">
-                                  · {p.position}
-                                </span>
-                              )}
+
                             </div>
                             <span className="text-[10px] text-slate-400 font-medium truncate">{p.email}</span>
                           </div>
