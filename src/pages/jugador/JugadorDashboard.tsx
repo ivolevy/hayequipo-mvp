@@ -439,10 +439,7 @@ const JugadorDashboard = () => {
                     <Dumbbell className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">PLAN DE ENTRENAMIENTO</p>
-                    <h3 className="font-display text-base text-slate-900 uppercase tracking-tight mt-0.5">
-                      {structuredTrainingPlan ? structuredTrainingPlan.title : (playerProfile?.training_plan || 'Sin asignar')}
-                    </h3>
+                    <h3 className="font-display text-sm text-slate-900 uppercase tracking-tight">PLAN DE ENTRENAMIENTO</h3>
                   </div>
                 </div>
                 <Link to="/jugador/entrenamiento" className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100 transition-all">
@@ -515,10 +512,7 @@ const JugadorDashboard = () => {
                     <Apple className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600">PLAN NUTRICIONAL</p>
-                    <h3 className="font-display text-base text-slate-900 uppercase tracking-tight mt-0.5">
-                      {structuredNutritionPlan ? structuredNutritionPlan.title : (playerProfile?.nutrition_plan || 'Mantenimiento General')}
-                    </h3>
+                    <h3 className="font-display text-sm text-slate-900 uppercase tracking-tight">PLAN NUTRICIONAL</h3>
                   </div>
                 </div>
                 <Link to="/jugador/nutricion" className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 group-hover:bg-emerald-50 transition-all">
