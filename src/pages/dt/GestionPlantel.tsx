@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Trash2, Shield, User, Activity, Apple, Pencil, Search, X, Check, Loader2, Lock } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, Activity, Apple, Pencil, Search, X, Check, Loader2, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
@@ -67,6 +67,13 @@ const GestionPlantel = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'todos' | 'jugador' | 'staff'>('todos');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+
+  // Reset pagination on search or tab change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab]);
   
   // Form / Edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -305,6 +312,9 @@ const GestionPlantel = () => {
     
     return matchesSearch;
   });
+
+  const totalPages = Math.ceil(filteredProfiles.length / itemsPerPage);
+  const paginatedProfiles = filteredProfiles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <Layout title="Plantel & Staff">
@@ -584,7 +594,7 @@ const GestionPlantel = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-                {filteredProfiles.map((p) => {
+                {paginatedProfiles.map((p) => {
                   const Icon = roleIcons[p.role] || User;
                   return (
                     <div 
@@ -621,6 +631,7 @@ const GestionPlantel = () => {
 
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <button
+                          type="button"
                           onClick={() => handleEdit(p)}
                           className="p-2 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                           aria-label={`Editar a ${p.full_name}`}
@@ -629,6 +640,7 @@ const GestionPlantel = () => {
                         </button>
                         {p.id !== user?.supabaseId && (
                           <button
+                            type="button"
                             onClick={() => handleDelete(p.id, p.full_name)}
                             className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                             aria-label={`Eliminar a ${p.full_name}`}
@@ -644,6 +656,33 @@ const GestionPlantel = () => {
                 {filteredProfiles.length === 0 && (
                   <div className="col-span-full py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No se encontraron miembros</p>
+                  </div>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="col-span-full flex items-center justify-between pt-4 px-1">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white transition-all shadow-sm"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      ANTERIOR
+                    </button>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center flex-1">
+                      PÁGINA {currentPage} DE {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white transition-all shadow-sm"
+                    >
+                      SIGUIENTE
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
               </div>
