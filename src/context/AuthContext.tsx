@@ -202,7 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedActiveTeamId = localStorage.getItem('hay_equipo_active_team_id');
         const targetTeamId = selectedTeamIdOverride !== undefined 
           ? selectedTeamIdOverride 
-          : (savedActiveTeamId || (formattedMems.length > 0 ? formattedMems[0].team_id : null));
+          : (savedActiveTeamId || null); // Avoid auto-selecting first team if no saved active team exists
 
         if (targetTeamId && formattedMems.some(m => m.team_id === targetTeamId)) {
           const activeMem = formattedMems.find(m => m.team_id === targetTeamId)!;
@@ -232,16 +232,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setActiveTeamId(null);
           localStorage.removeItem('hay_equipo_active_team_id');
 
+          const firstRole = formattedMems.length > 0 ? formattedMems[0].role : (profile.role as UserRole);
+
           const mappedUser: DemoUser & { activeTeamId?: string; activeTeamName?: string; inviteCode?: string; activeTeamPlan?: string } = {
             id: profile.id,
             supabaseId: profile.id,
             name: profile.full_name,
             email: profile.email || email,
-            role: 'jugador', // placeholder role
-            roleLabel: 'Usuario',
+            role: firstRole,
+            roleLabel: getRoleLabel(firstRole),
             initials: getInitials(profile.full_name),
             color: profile.avatar_url || '#10B981',
-            emoji: '⚽',
+            emoji: getRoleEmoji(firstRole),
             activeTeamPlan: 'free',
           };
           setUser(mappedUser);
