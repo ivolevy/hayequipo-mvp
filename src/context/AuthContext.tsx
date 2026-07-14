@@ -273,18 +273,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const parsed = JSON.parse(saved);
       setUser(parsed);
       
-      // If we are not a demo user, refresh memberships
-      const demoIds = [
-        '11111111-1111-1111-1111-111111111111',
-        '22222222-2222-2222-2222-222222222222',
-        '33333333-3333-3333-3333-333333333333',
-        '44444444-4444-4444-4444-444444444444'
-      ];
-      if (!demoIds.includes(parsed.id)) {
-        fetchUserProfile(parsed.id, parsed.email || '');
-      } else {
-        setLoading(false);
-      }
+      // Refresh memberships on mount for all users (including demo users) to sync database changes
+      fetchUserProfile(parsed.id, parsed.email || '');
       return;
     }
 
@@ -347,40 +337,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Hardcode membership for demo users so they work out of the box
-    const demoTeamId = 'e0d3e922-9070-4754-a53d-47c5417f65d2';
-    const targetPlan = planOverride || 'free';
-
-    // Synchronize the team's plan in Supabase so the database is in sync
+    // Load real memberships from the database for demo users
+    const defaultTeamId = 'e0d3e922-9070-4754-a53d-47c5417f65d2';
     try {
-      await supabase
-        .from('hayequipo_teams')
-        .update({ plan: targetPlan })
-        .eq('id', demoTeamId);
+      // Fetch memberships from DB first
+      const { data: mems, error: memsError } = await supabase
+        .from('hayequipo_memberships')
+        .select('*, hayequipo_teams(name, invite_code, plan)')
+        .eq('profile_id', u.id);
+
+      if (memsError) throw memsError;
+
+      if (mems && mems.length > 0) {
+        const formattedMems: TeamMembership[] = mems.map(m => {
+          const teamInfo = Array.isArray(m.hayequipo_teams)
+            ? m.hayequipo_teams[0]
+            : m.hayequipo_teams;
+
+          return {
+            team_id: m.team_id,
+            team_name: teamInfo?.name || 'Equipo sin nombre',
+            invite_code: teamInfo?.invite_code || '',
+            role: (m.role === 'admin' ? 'dt' : m.role) as UserRole,
+            number: m.number || undefined,
+            position: m.position || undefined,
+            plan: teamInfo?.plan || 'free',
+          };
+        });
+
+        // Set the active team (use the saved one, or the default one, or the first one)
+        const savedActive = localStorage.getItem('hay_equipo_active_team_id');
+        const activeMem = formattedMems.find(m => m.team_id === savedActive) || 
+                          formattedMems.find(m => m.team_id === defaultTeamId) || 
+                          formattedMems[0];
+
+        // If the demo plan override is passed, update that team's plan in DB and locally
+        if (planOverride) {
+          await supabase
+            .from('hayequipo_teams')
+            .update({ plan: planOverride })
+            .eq('id', activeMem.team_id);
+          activeMem.plan = planOverride;
+        }
+
+        const mappedUser = {
+          ...u,
+          activeTeamId: activeMem.team_id,
+          activeTeamName: activeMem.team_name,
+          inviteCode: activeMem.invite_code,
+          activeTeamPlan: activeMem.plan || 'free',
+          role: activeMem.role,
+        };
+
+        setUser(mappedUser);
+        setActiveTeamId(activeMem.team_id);
+        setMemberships(formattedMems);
+
+        localStorage.setItem('hay_equipo_user', JSON.stringify(mappedUser));
+        localStorage.setItem('hay_equipo_active_team_id', activeMem.team_id);
+        setIsLoggingIn(false);
+        setLoginMessage('');
+        return;
+      }
     } catch (e) {
-      console.error('Error updating demo team plan during shortcut login:', e);
+      console.error('Error fetching real memberships for demo user on login:', e);
     }
 
-    const mappedUser = {
+    // Fallback if DB fetch fails or has no entries
+    const fallbackPlan = planOverride || 'free';
+    const fallbackUser = {
       ...u,
-      activeTeamId: demoTeamId,
+      activeTeamId: defaultTeamId,
       activeTeamName: 'Hay Equipo FC',
       inviteCode: 'HAY123',
-      activeTeamPlan: targetPlan
+      activeTeamPlan: fallbackPlan
     };
 
-    setUser(mappedUser);
-    setActiveTeamId(demoTeamId);
+    setUser(fallbackUser);
+    setActiveTeamId(defaultTeamId);
     setMemberships([{
-      team_id: demoTeamId,
+      team_id: defaultTeamId,
       team_name: 'Hay Equipo FC',
       invite_code: 'HAY123',
       role: u.role,
-      plan: targetPlan
+      plan: fallbackPlan
     }]);
 
-    localStorage.setItem('hay_equipo_user', JSON.stringify(mappedUser));
-    localStorage.setItem('hay_equipo_active_team_id', demoTeamId);
+    localStorage.setItem('hay_equipo_user', JSON.stringify(fallbackUser));
+    localStorage.setItem('hay_equipo_active_team_id', defaultTeamId);
     setIsLoggingIn(false);
     setLoginMessage('');
   }, []);
