@@ -123,7 +123,7 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           createdAt: m.created_at,
           completed: m.status === 'completed',
           convocations: fullConvs,
-          formation: m.formation || '4-3-3'
+          formation: localStorage.getItem('hay_equipo_match_formation_' + m.id) || m.formation || '4-3-3'
         };
       });
 
@@ -165,7 +165,7 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       if (!activeTeamId) throw new Error('No hay equipo activo seleccionado');
 
-      // 1. Insertar partido
+      // 1. Insertar partido (excluyendo la columna formation que no existe en BD)
       const { data: newMatch, error: matchError } = await supabase
         .from('hayequipo_matches')
         .insert({
@@ -173,13 +173,15 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           date: new Date(data.date).toISOString(),
           rival: data.rival,
           location: data.venue,
-          status: 'scheduled',
-          formation: data.formation || '4-3-3'
+          status: 'scheduled'
         })
         .select()
         .single();
 
       if (matchError) throw matchError;
+
+      // Guardar formación localmente
+      localStorage.setItem('hay_equipo_match_formation_' + newMatch.id, data.formation || '4-3-3');
 
       // 2. Insertar convocatorias
       if (data.convocations.length > 0) {
@@ -212,12 +214,16 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           date: data.date ? new Date(data.date).toISOString() : undefined,
           rival: data.rival,
           location: data.venue,
-          status: data.completed !== undefined ? (data.completed ? 'completed' : 'scheduled') : undefined,
-          formation: data.formation
+          status: data.completed !== undefined ? (data.completed ? 'completed' : 'scheduled') : undefined
         })
         .eq('id', matchId);
 
       if (matchError) throw matchError;
+
+      // Guardar formación localmente
+      if (data.formation) {
+        localStorage.setItem('hay_equipo_match_formation_' + matchId, data.formation);
+      }
 
       if (data.convocations) {
         const { error: deleteError } = await supabase
