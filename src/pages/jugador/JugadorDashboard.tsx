@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { Trophy, Target, Zap, Clock, CalendarDays, MapPin, ChevronRight, Megaphone, Apple, Utensils, Info, Check, X, Dumbbell, Activity, Lock } from 'lucide-react';
+import { Trophy, Target, Zap, Clock, CalendarDays, MapPin, ChevronRight, Megaphone, Apple, Utensils, Info, Check, X, Dumbbell, Activity } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useMatches } from '@/context/MatchContext';
 import { useNotices } from '@/context/NoticeContext';
 import { useNutri } from '@/context/NutriContext';
-import { usePlanLimits } from '@/hooks/usePlanLimits';
-import { UpgradeModal } from '@/components/UpgradeModal';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -73,35 +71,13 @@ const parseNutritionPlan = (planStr?: string): NutritionPlanJSON | null => {
 
 const JugadorDashboard = () => {
   const { user } = useAuth();
-  const { matches, loading: matchesLoading, respondConvocation } = useMatches();
+  const { matches, respondConvocation } = useMatches();
   const { notices } = useNotices();
   const { objectives } = useNutri();
-  const { limits } = usePlanLimits();
   const [showNotice, setShowNotice] = useState(false);
   const [showConvocatoria, setShowConvocatoria] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [upgradeFeature, setUpgradeFeature] = useState<'nutrition' | 'physical'>('nutrition');
-
-  const openUpgrade = (feature: 'nutrition' | 'physical') => {
-    setUpgradeFeature(feature);
-    setUpgradeOpen(true);
-  };
   
-  const [discardedNoticeIds, setDiscardedNoticeIds] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('hay_equipo_discarded_notices') || '[]');
-    } catch {
-      return [];
-    }
-  });
-
-  const handleDiscardNotice = (noticeId: string) => {
-    const nextIds = [...discardedNoticeIds, noticeId];
-    setDiscardedNoticeIds(nextIds);
-    localStorage.setItem('hay_equipo_discarded_notices', JSON.stringify(nextIds));
-  };
-
-  const standardNotices = notices.filter(n => n.type !== 'convocatoria' && !discardedNoticeIds.includes(n.id));
+  const standardNotices = notices.filter(n => n.type !== 'convocatoria');
   const convocatoriaNotices = notices.filter(n => n.type === 'convocatoria');
   
   const [playerProfile, setPlayerProfile] = useState<any>(null);
@@ -251,22 +227,12 @@ const JugadorDashboard = () => {
             {showNotice && (
               <div className="space-y-4 animate-in slide-in-from-top-4 duration-300">
                 {standardNotices.map(notice => (
-                  <div key={notice.id} className="premium-card p-6 border-l-4 border-l-rose-500 bg-white relative">
-                    <div className="flex justify-between items-start mb-2 pr-6">
+                  <div key={notice.id} className="premium-card p-6 border-l-4 border-l-rose-500 bg-white">
+                    <div className="flex justify-between items-start mb-2">
                       <h3 className="font-display text-base text-slate-900 uppercase tracking-tight">{notice.title}</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[8px] font-black text-slate-350 uppercase tracking-widest">
-                          {format(new Date(notice.date), "d MMM", { locale: es })}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDiscardNotice(notice.id)}
-                          className="p-1 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                          title="Descartar comunicado"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">
+                        {format(new Date(notice.date), "d MMM", { locale: es })}
+                      </span>
                     </div>
                     <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-wrap">{notice.message}</p>
                   </div>
@@ -288,11 +254,7 @@ const JugadorDashboard = () => {
               </Link>
             </div>
 
-            {matchesLoading ? (
-              <div className="premium-card p-8 bg-white border border-slate-100 text-center flex flex-col items-center justify-center min-h-[260px]">
-                <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : nextMatch ? (
+            {nextMatch ? (
               <div className="premium-card p-6 bg-white border border-slate-150 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[260px] group">
                 <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity pointer-events-none">
                   <Trophy className="w-40 h-40 rotate-12 text-emerald-950" />
@@ -415,31 +377,17 @@ const JugadorDashboard = () => {
             </div>
 
             {/* Plan de Entrenamiento Card */}
-            <div className="premium-card p-6 bg-white border border-slate-100 transition-all duration-300 group relative overflow-hidden">
-              {!limits.hasPhysicalPrep && (
-                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-[3px] flex flex-col items-center justify-center gap-3 rounded-[inherit]">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center">
-                    <Lock className="w-5 h-5 text-slate-400" />
-                  </div>
-                  <div className="text-center px-4">
-                    <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Plan Avanzado requerido</p>
-                    <p className="text-[9px] text-slate-400 font-medium mt-0.5">Rutinas personalizadas del Prep. Físico</p>
-                  </div>
-                  <button
-                    onClick={() => openUpgrade('physical')}
-                    className="bg-slate-900 hover:bg-emerald-600 text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all"
-                  >
-                    Ver planes
-                  </button>
-                </div>
-              )}
+            <div className="premium-card p-6 bg-white border border-slate-100 hover:border-emerald-250 transition-all duration-300 group">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shrink-0 shadow-md">
                     <Dumbbell className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-display text-sm text-slate-900 uppercase tracking-tight">PLAN DE ENTRENAMIENTO</h3>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">PLAN DE ENTRENAMIENTO</p>
+                    <h3 className="font-display text-base text-slate-900 uppercase tracking-tight mt-0.5">
+                      {structuredTrainingPlan ? structuredTrainingPlan.title : (playerProfile?.training_plan || 'Sin asignar')}
+                    </h3>
                   </div>
                 </div>
                 <Link to="/jugador/entrenamiento" className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100 transition-all">
@@ -488,31 +436,17 @@ const JugadorDashboard = () => {
             </div>
 
             {/* Plan Nutricional Card */}
-            <div className="premium-card p-6 bg-white border border-slate-100 transition-all duration-300 group relative overflow-hidden">
-              {!limits.hasNutrition && (
-                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-[3px] flex flex-col items-center justify-center gap-3 rounded-[inherit]">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center">
-                    <Lock className="w-5 h-5 text-amber-500" />
-                  </div>
-                  <div className="text-center px-4">
-                    <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Plan Avanzado requerido</p>
-                    <p className="text-[9px] text-slate-400 font-medium mt-0.5">Planes nutricionales del Nutricionista</p>
-                  </div>
-                  <button
-                    onClick={() => openUpgrade('nutrition')}
-                    className="bg-amber-500 hover:bg-amber-600 text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all"
-                  >
-                    Ver planes
-                  </button>
-                </div>
-              )}
+            <div className="premium-card p-6 bg-white border border-slate-100 hover:border-emerald-250 transition-all duration-300 group">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-md">
                     <Apple className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-display text-sm text-slate-900 uppercase tracking-tight">PLAN NUTRICIONAL</h3>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600">PLAN NUTRICIONAL</p>
+                    <h3 className="font-display text-base text-slate-900 uppercase tracking-tight mt-0.5">
+                      {structuredNutritionPlan ? structuredNutritionPlan.title : (playerProfile?.nutrition_plan || 'Mantenimiento General')}
+                    </h3>
                   </div>
                 </div>
                 <Link to="/jugador/nutricion" className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 group-hover:bg-emerald-50 transition-all">
@@ -567,11 +501,6 @@ const JugadorDashboard = () => {
         </div>
 
       </div>
-      <UpgradeModal
-        isOpen={upgradeOpen}
-        onClose={() => setUpgradeOpen(false)}
-        feature={upgradeFeature}
-      />
     </Layout>
   );
 };

@@ -116,16 +116,9 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
               HAY <span className="text-emerald-200">EQUIPO</span>
             </h2>
             {user.activeTeamName && (
-              <div>
-                <p className="text-[10px] font-black text-emerald-100 uppercase tracking-widest mt-1 opacity-80 truncate">
-                  {user.activeTeamName}
-                </p>
-                <div className="inline-flex mt-2">
-                  <span className="text-[7.5px] font-black tracking-wider px-2 py-0.5 rounded bg-emerald-500/25 text-white border border-emerald-400/20 uppercase">
-                    {limits.planName}
-                  </span>
-                </div>
-              </div>
+              <p className="text-[10px] font-black text-emerald-100 uppercase tracking-widest mt-1 opacity-80 truncate">
+                {user.activeTeamName}
+              </p>
             )}
           </div>
           <nav className="space-y-3">
@@ -199,12 +192,7 @@ const Layout: React.FC<LayoutProps> = ({ children, showBack, backTo, onBack, tit
       {/* Mobile top bar */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-24 bg-white/80 backdrop-blur-2xl border-b border-slate-50 flex items-center justify-between px-8 z-[999] shadow-sm">
         <div className="flex flex-col min-w-0 mr-4">
-          <div className="flex items-center gap-2">
-            <h2 className="font-display text-lg tracking-tight text-slate-900 leading-none uppercase">HAY <span className="text-emerald-600">EQUIPO</span></h2>
-            <span className="text-[7.5px] font-black tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-100 text-emerald-600 uppercase shrink-0">
-              {limits.planName}
-            </span>
-          </div>
+          <h2 className="font-display text-lg tracking-tight text-slate-900 leading-none uppercase">HAY <span className="text-emerald-600">EQUIPO</span></h2>
           {user.activeTeamName && (
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mt-1 truncate">{user.activeTeamName}</span>
           )}

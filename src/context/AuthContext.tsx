@@ -76,58 +76,6 @@ const getInitials = (name: string) => {
     .substring(0, 2);
 };
 
-const sendWelcomeEmail = async (userName: string, userEmail: string) => {
-  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-  if (
-    !serviceId || 
-    !templateId || 
-    !publicKey || 
-    templateId.includes('your_template_id_here') || 
-    publicKey.includes('your_public_key_here')
-  ) {
-    console.warn('EmailJS no está completamente configurado en las variables de entorno.');
-    return;
-  }
-
-  // Validar que el email no esté vacío y tenga formato correcto
-  if (!userEmail || !userEmail.includes('@')) {
-    console.error('Intento de envío abortado: El email de destino es inválido o está vacío:', userEmail);
-    return;
-  }
-
-  console.log('Intentando enviar correo de bienvenida a:', userEmail, 'para el usuario:', userName);
-
-  try {
-    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        service_id: serviceId,
-        template_id: templateId,
-        user_id: publicKey,
-        template_params: {
-          user_name: userName,
-          user_email: userEmail,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`EmailJS API error: ${response.status} - ${errorText}`);
-    }
-    console.log('Email de bienvenida enviado con éxito.');
-  } catch (error) {
-    console.error('Error al enviar el email de bienvenida:', error);
-  }
-};
-
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<DemoUser | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -179,30 +127,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (memsError) throw memsError;
 
-        const formattedMems: TeamMembership[] = (mems || []).map(m => {
-          const teamInfo = Array.isArray(m.hayequipo_teams)
-            ? m.hayequipo_teams[0]
-            : m.hayequipo_teams;
-
-          return {
-            team_id: m.team_id,
-            team_name: teamInfo?.name || 'Equipo sin nombre',
-            invite_code: teamInfo?.invite_code || '',
-            role: (m.role === 'admin' ? 'dt' : m.role) as UserRole,
-            number: m.number || undefined,
-            position: m.position || undefined,
-            plan: teamInfo?.plan || 'free',
-          };
-        });
+        const formattedMems: TeamMembership[] = (mems || []).map(m => ({
+          team_id: m.team_id,
+          team_name: m.hayequipo_teams?.name || 'Equipo sin nombre',
+          invite_code: m.hayequipo_teams?.invite_code || '',
+          role: m.role as UserRole,
+          number: m.number || undefined,
+          position: m.position || undefined,
+          plan: m.hayequipo_teams?.plan || 'free',
+        }));
 
         setMemberships(formattedMems);
 
         // 3. Determine active team
-        // Load the saved active team from localStorage if no override is specified
-        const savedActiveTeamId = localStorage.getItem('hay_equipo_active_team_id');
-        const targetTeamId = selectedTeamIdOverride !== undefined 
-          ? selectedTeamIdOverride 
-          : (savedActiveTeamId || null); // Avoid auto-selecting first team if no saved active team exists
+        // Do not auto-load saved active team from localStorage on initial startup to force landing on /seleccionar-equipo
+        const targetTeamId = selectedTeamIdOverride !== undefined ? selectedTeamIdOverride : null;
 
         if (targetTeamId && formattedMems.some(m => m.team_id === targetTeamId)) {
           const activeMem = formattedMems.find(m => m.team_id === targetTeamId)!;
@@ -232,18 +171,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setActiveTeamId(null);
           localStorage.removeItem('hay_equipo_active_team_id');
 
-          const firstRole = formattedMems.length > 0 ? formattedMems[0].role : (profile.role as UserRole);
-
           const mappedUser: DemoUser & { activeTeamId?: string; activeTeamName?: string; inviteCode?: string; activeTeamPlan?: string } = {
             id: profile.id,
             supabaseId: profile.id,
             name: profile.full_name,
             email: profile.email || email,
-            role: firstRole,
-            roleLabel: getRoleLabel(firstRole),
+            role: 'jugador', // placeholder role
+            roleLabel: 'Usuario',
             initials: getInitials(profile.full_name),
             color: profile.avatar_url || '#10B981',
-            emoji: getRoleEmoji(firstRole),
+            emoji: '⚽',
             activeTeamPlan: 'free',
           };
           setUser(mappedUser);
@@ -275,8 +212,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const parsed = JSON.parse(saved);
       setUser(parsed);
       
-      // Refresh memberships on mount for all users (including demo users) to sync database changes
-      fetchUserProfile(parsed.id, parsed.email || '');
+      // If we are not a demo user, refresh memberships
+      const demoIds = [
+        '11111111-1111-1111-1111-111111111111',
+        '22222222-2222-2222-2222-222222222222',
+        '33333333-3333-3333-3333-333333333333',
+        '44444444-4444-4444-4444-444444444444'
+      ];
+      if (!demoIds.includes(parsed.id)) {
+        fetchUserProfile(parsed.id, parsed.email || '');
+      } else {
+        setLoading(false);
+      }
       return;
     }
 
@@ -339,90 +286,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Load real memberships from the database for demo users
-    const defaultTeamId = 'e0d3e922-9070-4754-a53d-47c5417f65d2';
+    // Hardcode membership for demo users so they work out of the box
+    const demoTeamId = 'e0d3e922-9070-4754-a53d-47c5417f65d2';
+    const targetPlan = planOverride || 'free';
+
+    // Synchronize the team's plan in Supabase so the database is in sync
     try {
-      // Fetch memberships from DB first
-      const { data: mems, error: memsError } = await supabase
-        .from('hayequipo_memberships')
-        .select('*, hayequipo_teams(name, invite_code, plan)')
-        .eq('profile_id', u.id);
-
-      if (memsError) throw memsError;
-
-      if (mems && mems.length > 0) {
-        const formattedMems: TeamMembership[] = mems.map(m => {
-          const teamInfo = Array.isArray(m.hayequipo_teams)
-            ? m.hayequipo_teams[0]
-            : m.hayequipo_teams;
-
-          return {
-            team_id: m.team_id,
-            team_name: teamInfo?.name || 'Equipo sin nombre',
-            invite_code: teamInfo?.invite_code || '',
-            role: (m.role === 'admin' ? 'dt' : m.role) as UserRole,
-            number: m.number || undefined,
-            position: m.position || undefined,
-            plan: teamInfo?.plan || 'free',
-          };
-        });
-
-        // For demo shortcuts, always force redirecting to the "Elegir equipo" screen
-        // by leaving activeTeamId null and clearing it from localStorage.
-        localStorage.removeItem('hay_equipo_active_team_id');
-
-        // If the demo plan override is passed, update default team plan in DB
-        if (planOverride) {
-          await supabase
-            .from('hayequipo_teams')
-            .update({ plan: planOverride })
-            .eq('id', defaultTeamId);
-        }
-
-        const mappedUser = {
-          ...u,
-          activeTeamId: undefined,
-          activeTeamName: undefined,
-          inviteCode: undefined,
-          activeTeamPlan: undefined,
-          role: u.role,
-        };
-
-        setUser(mappedUser);
-        setActiveTeamId(null);
-        setMemberships(formattedMems);
-
-        localStorage.setItem('hay_equipo_user', JSON.stringify(mappedUser));
-        setIsLoggingIn(false);
-        setLoginMessage('');
-        return;
-      }
+      await supabase
+        .from('hayequipo_teams')
+        .update({ plan: targetPlan })
+        .eq('id', demoTeamId);
     } catch (e) {
-      console.error('Error fetching real memberships for demo user on login:', e);
+      console.error('Error updating demo team plan during shortcut login:', e);
     }
 
-    // Fallback if DB fetch fails or has no entries
-    const fallbackPlan = planOverride || 'free';
-    const fallbackUser = {
+    const mappedUser = {
       ...u,
-      activeTeamId: undefined,
-      activeTeamName: undefined,
-      inviteCode: undefined,
-      activeTeamPlan: undefined
+      activeTeamId: demoTeamId,
+      activeTeamName: 'Hay Equipo FC',
+      inviteCode: 'HAY123',
+      activeTeamPlan: targetPlan
     };
 
-    setUser(fallbackUser);
-    setActiveTeamId(null);
+    setUser(mappedUser);
+    setActiveTeamId(demoTeamId);
     setMemberships([{
-      team_id: defaultTeamId,
+      team_id: demoTeamId,
       team_name: 'Hay Equipo FC',
       invite_code: 'HAY123',
       role: u.role,
-      plan: fallbackPlan
+      plan: targetPlan
     }]);
 
-    localStorage.setItem('hay_equipo_user', JSON.stringify(fallbackUser));
-    localStorage.removeItem('hay_equipo_active_team_id');
+    localStorage.setItem('hay_equipo_user', JSON.stringify(mappedUser));
+    localStorage.setItem('hay_equipo_active_team_id', demoTeamId);
     setIsLoggingIn(false);
     setLoginMessage('');
   }, []);
@@ -475,8 +372,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if session is established (email confirmation is disabled)
       if (data.session) {
         await fetchUserProfile(data.user.id, email);
-        // Send welcome email in background
-        sendWelcomeEmail(fullName, email).catch(err => console.error("Error en welcome email:", err));
         return { sessionRequired: false };
       }
 
@@ -531,8 +426,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       await fetchUserProfile(data.user.id, email);
-      // Send welcome email in background
-      sendWelcomeEmail(fullName, email).catch(err => console.error("Error en welcome email:", err));
     } catch (err: any) {
       console.error('Error verifying OTP:', err);
       throw err;
@@ -651,7 +544,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert({
           profile_id: user.supabaseId,
           team_id: newTeam.id,
-          role: 'dt' // Creator is the DT/Coach
+          role: 'admin' // Creator is the Admin
         });
 
       if (memError) throw memError;

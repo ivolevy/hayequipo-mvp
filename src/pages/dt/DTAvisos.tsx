@@ -19,16 +19,6 @@ const DTAvisos = () => {
       return;
     }
 
-    if (noticeTitle.trim().length > 80) {
-      toast.error('El título no puede superar los 80 caracteres');
-      return;
-    }
-
-    if (noticeMessage.trim().length > 1000) {
-      toast.error('El mensaje no puede superar los 1000 caracteres');
-      return;
-    }
-
     if (isEditing && editingId) {
       editNotice(editingId, noticeTitle, noticeMessage);
       toast.success('Aviso actualizado correctamente');
@@ -92,8 +82,6 @@ const DTAvisos = () => {
                     placeholder="ej: Cambio de cancha, Llevar DNI..."
                     value={noticeTitle}
                     onChange={(e) => setNoticeTitle(e.target.value)}
-                    maxLength={80}
-                    required
                     className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs font-semibold outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>
@@ -105,8 +93,6 @@ const DTAvisos = () => {
                     placeholder="Escribe el mensaje completo aquí..."
                     value={noticeMessage}
                     onChange={(e) => setNoticeMessage(e.target.value)}
-                    maxLength={1000}
-                    required
                     className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs font-medium outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 min-h-[120px] transition-all text-slate-800"
                   />
                 </div>

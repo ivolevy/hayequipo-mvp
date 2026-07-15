@@ -23,7 +23,7 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const options: any = {
+  const options: NotificationOptions = {
     body: data.body,
     icon: '/logopwa.png',
     badge: '/logopwa.png',

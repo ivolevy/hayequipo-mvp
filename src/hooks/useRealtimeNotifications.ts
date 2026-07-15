@@ -7,13 +7,13 @@ export const showSystemNotification = (title: string, options?: NotificationOpti
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
 
-  const defaultOptions: any = {
+  const defaultOptions: NotificationOptions = {
     icon: '/logopwa.png',
     badge: '/logopwa.png',
     vibrate: [200, 100, 200],
   };
 
-  const finalOptions = { ...defaultOptions, ...options } as any;
+  const finalOptions = { ...defaultOptions, ...options };
 
   // Try to use Service Worker registration (required for background / lock screen on mobile)
   if ('serviceWorker' in navigator) {
@@ -156,7 +156,7 @@ export const useRealtimeNotifications = () => {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'hayequipo_announcements',
+          table: 'hayequipo_notices',
           filter: `team_id=eq.${user.activeTeamId}`,
         },
         (payload) => {

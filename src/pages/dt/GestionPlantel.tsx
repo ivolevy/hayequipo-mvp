@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Trash2, Shield, User, Activity, Apple, Pencil, Search, X, Check, Loader2, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, Activity, Apple, Pencil, Search, X, Check, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
@@ -67,13 +67,6 @@ const GestionPlantel = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'todos' | 'jugador' | 'staff'>('todos');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
-
-  // Reset pagination on search or tab change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, activeTab]);
   
   // Form / Edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -128,28 +121,6 @@ const GestionPlantel = () => {
       toast.error('El nombre es obligatorio');
       return;
     }
-    if (name.trim().length > 50) {
-      toast.error('El nombre no puede superar los 50 caracteres');
-      return;
-    }
-    if (email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        toast.error('Por favor ingresá un correo electrónico válido');
-        return;
-      }
-      if (email.trim().length > 100) {
-        toast.error('El correo no puede superar los 100 caracteres');
-        return;
-      }
-    }
-    if (role === 'jugador' && number) {
-      const parsedNum = Number(number);
-      if (!Number.isInteger(parsedNum) || parsedNum < 1 || parsedNum > 999) {
-        toast.error('El dorsal debe ser un número entero entre 1 y 999');
-        return;
-      }
-    }
     if (!activeTeamId) {
       toast.error('No hay un equipo activo seleccionado');
       return;
@@ -169,8 +140,6 @@ const GestionPlantel = () => {
     const finalEmail = email.trim() || `${name.toLowerCase().replace(/\s+/g, '')}@hayequipo.com`;
 
     try {
-      const dbRole = role === 'admin' ? 'dt' : role;
-
       if (isEditing && editingId) {
         // 1. Update global profile
         const { error: profileError } = await supabase
@@ -178,7 +147,7 @@ const GestionPlantel = () => {
           .update({
             full_name: name,
             email: finalEmail,
-            role: dbRole
+            role
           })
           .eq('id', editingId);
 
@@ -188,7 +157,7 @@ const GestionPlantel = () => {
         const { error: memError } = await supabase
           .from('hayequipo_memberships')
           .update({
-            role: dbRole,
+            role,
             number: role === 'jugador' ? Number(number) || null : null,
             position: role === 'jugador' ? position : null
           })
@@ -238,7 +207,7 @@ const GestionPlantel = () => {
               id: profileId,
               full_name: name,
               email: finalEmail,
-              role: dbRole,
+              role,
               avatar_url: randomColor
             });
 
@@ -251,7 +220,7 @@ const GestionPlantel = () => {
           .insert({
             profile_id: profileId,
             team_id: activeTeamId,
-            role: dbRole,
+            role,
             number: role === 'jugador' ? Number(number) || null : null,
             position: role === 'jugador' ? position : null
           });
@@ -312,9 +281,6 @@ const GestionPlantel = () => {
     
     return matchesSearch;
   });
-
-  const totalPages = Math.ceil(filteredProfiles.length / itemsPerPage);
-  const paginatedProfiles = filteredProfiles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <Layout title="Plantel & Staff">
@@ -399,8 +365,6 @@ const GestionPlantel = () => {
                     placeholder="Ej: Michael Olise" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    maxLength={50}
-                    required
                     className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>
@@ -412,8 +376,6 @@ const GestionPlantel = () => {
                     placeholder="Ej: olise@hayequipo.com" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    maxLength={100}
                     className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>
@@ -472,10 +434,6 @@ const GestionPlantel = () => {
                         placeholder="Ej: 10" 
                         value={number}
                         onChange={(e) => setNumber(e.target.value)}
-                        min="1"
-                        max="999"
-                        step="1"
-                        inputMode="numeric"
                         className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                       />
                     </div>
@@ -594,7 +552,7 @@ const GestionPlantel = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-                {paginatedProfiles.map((p) => {
+                {filteredProfiles.map((p) => {
                   const Icon = roleIcons[p.role] || User;
                   return (
                     <div 
@@ -618,7 +576,11 @@ const GestionPlantel = () => {
                               <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${roleColors[p.role]}`}>
                                 {roleLabels[p.role]}
                               </span>
-
+                              {p.role === 'jugador' && p.position && (
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">
+                                  · {p.position}
+                                </span>
+                              )}
                             </div>
                             <span className="text-[10px] text-slate-400 font-medium truncate">{p.email}</span>
                           </div>
@@ -627,7 +589,6 @@ const GestionPlantel = () => {
 
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <button
-                          type="button"
                           onClick={() => handleEdit(p)}
                           className="p-2 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                           aria-label={`Editar a ${p.full_name}`}
@@ -636,7 +597,6 @@ const GestionPlantel = () => {
                         </button>
                         {p.id !== user?.supabaseId && (
                           <button
-                            type="button"
                             onClick={() => handleDelete(p.id, p.full_name)}
                             className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                             aria-label={`Eliminar a ${p.full_name}`}
@@ -652,33 +612,6 @@ const GestionPlantel = () => {
                 {filteredProfiles.length === 0 && (
                   <div className="col-span-full py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No se encontraron miembros</p>
-                  </div>
-                )}
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="col-span-full flex items-center justify-between pt-4 px-1">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white transition-all shadow-sm"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      ANTERIOR
-                    </button>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center flex-1">
-                      PÁGINA {currentPage} DE {totalPages}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white transition-all shadow-sm"
-                    >
-                      SIGUIENTE
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
                   </div>
                 )}
               </div>

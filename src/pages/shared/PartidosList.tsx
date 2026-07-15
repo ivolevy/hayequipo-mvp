@@ -12,7 +12,7 @@ type TabType = 'todos' | 'proximos' | 'pasados';
 type SortType = 'proximidad' | 'reciente' | 'antiguo';
 
 const PartidosList = () => {
-  const { matches, loading } = useMatches();
+  const { matches } = useMatches();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -143,11 +143,7 @@ const PartidosList = () => {
 
         {/* Matches Grid/List */}
         <div className="grid grid-cols-1 gap-4 px-1">
-          {loading ? (
-            <div className="flex items-center justify-center min-h-[200px]">
-              <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : filteredAndSortedMatches.length === 0 ? (
+          {filteredAndSortedMatches.length === 0 ? (
             <div className="premium-card p-12 md:p-24 text-center border-dashed bg-white border-slate-200">
               <CalendarDays className="w-10 h-10 text-slate-200 mx-auto mb-4" />
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">

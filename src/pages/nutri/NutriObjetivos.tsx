@@ -13,19 +13,11 @@ const NutriObjetivos = () => {
   const navigate = useNavigate();
 
   const handleAddObj = () => {
-    if (!newObjTitle.trim() || !newObjDesc.trim()) {
+    if (!newObjTitle || !newObjDesc) {
       toast.error('Completa todos los campos');
       return;
     }
-    if (newObjTitle.trim().length > 50) {
-      toast.error('El título no puede superar los 50 caracteres');
-      return;
-    }
-    if (newObjDesc.trim().length > 300) {
-      toast.error('La descripción no puede superar los 300 caracteres');
-      return;
-    }
-    addObjective({ title: newObjTitle.trim(), description: newObjDesc.trim(), category: 'general' });
+    addObjective({ title: newObjTitle, description: newObjDesc, category: 'general' });
     setNewObjTitle('');
     setNewObjDesc('');
     setIsAdding(false);
@@ -59,8 +51,6 @@ const NutriObjetivos = () => {
                   value={newObjTitle}
                   onChange={(e) => setNewObjTitle(e.target.value)}
                   placeholder="TÍTULO DEL OBJETIVO..."
-                  maxLength={50}
-                  required
                   className="w-full bg-white border border-slate-100 p-4 rounded-xl text-xs font-black tracking-widest outline-none focus:border-emerald-500"
                 />
                 <textarea 
@@ -68,8 +58,6 @@ const NutriObjetivos = () => {
                   onChange={(e) => setNewObjDesc(e.target.value)}
                   placeholder="DESCRIPCIÓN DETALLADA..."
                   rows={3}
-                  maxLength={300}
-                  required
                   className="w-full bg-white border border-slate-100 p-4 rounded-xl text-xs font-black tracking-widest outline-none focus:border-emerald-500 resize-none"
                 />
               </div>

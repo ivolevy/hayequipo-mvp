@@ -2,11 +2,9 @@ import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/Layout';
 import { User, Mail, Shield, LogOut, ChevronRight, Key } from 'lucide-react';
 import { toast } from 'sonner';
-import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 const Profile = () => {
   const { user, logout } = useAuth();
-  const { limits } = usePlanLimits();
 
   if (!user) return null;
 
@@ -34,17 +32,10 @@ const Profile = () => {
           >
             {user.initials}
           </div>
-          <div className="space-y-2 text-left w-full md:w-auto">
+          <div className="space-y-1 text-left w-full md:w-auto">
             <h1 className="hidden md:block text-xl md:text-2xl font-display text-slate-900 uppercase tracking-tight leading-none">{user.name}</h1>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{user.roleLabel}</span>
-              </div>
-              {user.activeTeamId && (
-                <div className="inline-flex items-center bg-slate-900 text-white px-4 py-1.5 rounded-full border border-slate-950 shadow-sm">
-                  <span className="text-[8.5px] font-black uppercase tracking-[0.25em]">{limits.planName}</span>
-                </div>
-              )}
+            <div className="inline-flex items-center bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{user.roleLabel}</span>
             </div>
           </div>
         </div>

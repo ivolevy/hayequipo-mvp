@@ -32,7 +32,6 @@ interface MatchContextType {
   respondConvocation: (matchId: string, playerId: string, status: 'confirmado' | 'rechazado') => Promise<void>;
   removeConvocation: (matchId: string, playerId: string) => Promise<void>;
   setSelectionForMatch: (matchId: string, playerId: string, selected: boolean) => Promise<void>;
-  setSelectionForAllConfirmed: (matchId: string, selected: boolean) => Promise<void>;
   updatePlayerPitchPosition: (matchId: string, playerId: string, x: number | null, y: number | null) => Promise<void>;
   getPlayerMatches: (playerId: string) => Match[];
   refreshMatches: () => Promise<void>;
@@ -354,22 +353,6 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [fetchMatches]);
 
-  const setSelectionForAllConfirmed = useCallback(async (matchId: string, selected: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('hayequipo_convocations')
-        .update({ selected_for_match: selected })
-        .eq('match_id', matchId)
-        .eq('status', 'confirmado');
-
-      if (error) throw error;
-      await fetchMatches();
-    } catch (error) {
-      console.error('Error setting selection for all confirmed:', error);
-      throw error;
-    }
-  }, [fetchMatches]);
-
   const updatePlayerPitchPosition = useCallback(async (matchId: string, playerId: string, x: number | null, y: number | null) => {
     try {
       // Verificar si ya existe la convocatoria
@@ -426,7 +409,6 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       respondConvocation, 
       removeConvocation, 
       setSelectionForMatch, 
-      setSelectionForAllConfirmed,
       updatePlayerPitchPosition,
       getPlayerMatches,
       refreshMatches: fetchMatches
