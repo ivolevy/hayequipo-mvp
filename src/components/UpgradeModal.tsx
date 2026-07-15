@@ -1,18 +1,16 @@
 import React from 'react';
 import { X, Shield, Activity, Apple, Lock, CheckCircle2 } from 'lucide-react';
 import { usePlanLimits, PricingPlan } from '@/hooks/usePlanLimits';
-import { useAuth } from '@/context/AuthContext';
 
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   feature?: 'nutrition' | 'physical' | 'players' | 'multiteam' | 'routines';
+  isPlayer?: boolean;
 }
 
-export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, feature = 'nutrition' }) => {
+export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, feature = 'nutrition', isPlayer = false }) => {
   const { simulateUpgrade } = usePlanLimits();
-  const { user } = useAuth();
-  const isPlayer = user?.role === 'jugador';
 
   if (!isOpen) return null;
 
