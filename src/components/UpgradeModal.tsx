@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Shield, Activity, Apple, Lock, CheckCircle2 } from 'lucide-react';
 import { usePlanLimits, PricingPlan } from '@/hooks/usePlanLimits';
+import { useAuth } from '@/context/AuthContext';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -10,6 +11,8 @@ interface UpgradeModalProps {
 
 export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, feature = 'nutrition' }) => {
   const { simulateUpgrade } = usePlanLimits();
+  const { user } = useAuth();
+  const isPlayer = user?.role === 'jugador';
 
   if (!isOpen) return null;
 
@@ -131,16 +134,28 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, fea
         </p>
 
         {/* Required Plan Info Card */}
-        <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 flex items-center justify-between">
-          <div>
-            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Requerido</span>
-            <div className="text-sm font-bold text-slate-800 uppercase mt-0.5">{details.requiredPlanLabel}</div>
+        {isPlayer ? (
+          <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex items-start gap-3">
+            <Lock className="w-5 h-5 text-amber-550 text-amber-500 shrink-0 mt-0.5" />
+            <div className="text-left">
+              <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Función Bloqueada</div>
+              <p className="text-[10px] text-amber-600 font-semibold mt-1 leading-relaxed">
+                Este módulo no está habilitado para tu club actual. Por favor, comunícate con tu Director Técnico para solicitar la habilitación de este módulo.
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Valor Muestra</span>
-            <div className="text-sm font-bold text-emerald-600 uppercase mt-0.5">{details.price}</div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 flex items-center justify-between">
+            <div>
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Requerido</span>
+              <div className="text-sm font-bold text-slate-800 uppercase mt-0.5">{details.requiredPlanLabel}</div>
+            </div>
+            <div className="text-right">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Valor Muestra</span>
+              <div className="text-sm font-bold text-emerald-600 uppercase mt-0.5">{details.price}</div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Benefits List */}
         <div className="space-y-3.5 pt-2">
@@ -157,18 +172,29 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, fea
 
         {/* Call to Action Button */}
         <div className="space-y-3 pt-4">
-          <button
-            onClick={handleUpgrade}
-            className="w-full bg-slate-900 hover:bg-emerald-600 hover:scale-[1.02] text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
-          >
-            <span>ACTIVAR PLAN (SIMULADO)</span>
-          </button>
-          <button
-            onClick={onClose}
-            className="w-full bg-transparent hover:bg-slate-50 text-slate-400 hover:text-slate-600 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
-          >
-            Volver a la App
-          </button>
+          {!isPlayer ? (
+            <>
+              <button
+                onClick={handleUpgrade}
+                className="w-full bg-slate-900 hover:bg-emerald-600 hover:scale-[1.02] text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>ACTIVAR PLAN (SIMULADO)</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="w-full bg-transparent hover:bg-slate-50 text-slate-400 hover:text-slate-600 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+              >
+                Volver a la App
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onClose}
+              className="w-full bg-slate-900 hover:bg-emerald-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span>ENTENDIDO</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
