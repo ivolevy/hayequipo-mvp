@@ -812,16 +812,16 @@ const PartidoDetalle = () => {
                   {!isReadOnly && !isPast && (
                     <div className="flex gap-2 items-center flex-wrap">
                       <button
-                        onClick={handlePublishSquadList}
-                        className="bg-slate-900 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-slate-900"
-                      >
-                        <span>Publicar Convocatoria</span>
-                      </button>
-                      <button
                         onClick={handleConvokeAllConfirmed}
                         className="bg-emerald-600 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-emerald-600"
                       >
                         <span>Convocar a Todos</span>
+                      </button>
+                      <button
+                        onClick={handlePublishSquadList}
+                        className="bg-slate-900 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-slate-900"
+                      >
+                        <span>Publicar Convocatoria</span>
                       </button>
                     </div>
                   )}
