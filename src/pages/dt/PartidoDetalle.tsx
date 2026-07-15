@@ -7,7 +7,7 @@ import { usePlayers } from '@/context/PlayerContext';
 import { Player } from '@/data/players';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarDays, MapPin, Shield, Users, Trash2, ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react';
+import { CalendarDays, MapPin, Shield, Users, Trash2, ChevronLeft, ChevronRight, Pencil, X, Check } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 import FootballPitch from '@/components/FootballPitch';
 import { toast } from 'sonner';
@@ -148,35 +148,33 @@ const PartidoDetalle = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { matches, respondConvocation, removeConvocation, setSelectionForMatch, updatePlayerPitchPosition, updateMatch, deleteMatch } = useMatches();
+  const { matches, loading: matchesLoading, respondConvocation, removeConvocation, setSelectionForMatch, setSelectionForAllConfirmed, updatePlayerPitchPosition, updateMatch, deleteMatch } = useMatches();
   const { players } = usePlayers();
   const { addNotice } = useNotices();
+
   const [showLineup, setShowLineup] = useState(false);
   const [formation, setFormation] = useState<keyof typeof formations>('4-3-3');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [slots, setSlots] = useState<PitchSlot[]>([]);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editRival, setEditRival] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editVenue, setEditVenue] = useState('');
+
+  const playersPerPage = 3;
+
+  const match = matches.find(m => m.id === id);
+  const isReadOnly = user?.role !== 'dt';
+  const myConv = match?.convocations.find(c => c.playerId === user?.supabaseId || c.playerId === user?.playerId);
+  const isPast = match ? (match.completed || new Date(match.date).getTime() < (Date.now() - 3 * 60 * 60 * 1000)) : false;
 
   useEffect(() => {
     if (match?.formation) {
       setFormation(match.formation as keyof typeof formations);
     }
   }, [match?.formation]);
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const playersPerPage = 3;
-  
-  const [slots, setSlots] = useState<PitchSlot[]>([]);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  
-  const match = matches.find(m => m.id === id);
-  const isReadOnly = user?.role !== 'dt';
-  const myConv = match?.convocations.find(c => c.playerId === user?.supabaseId || c.playerId === user?.playerId);
-
-  const isPast = match ? (match.completed || new Date(match.date).getTime() < (Date.now() - 3 * 60 * 60 * 1000)) : false;
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [editRival, setEditRival] = useState('');
-  const [editDate, setEditDate] = useState('');
-  const [editVenue, setEditVenue] = useState('');
 
   useEffect(() => {
     if (match) {
@@ -271,6 +269,16 @@ const PartidoDetalle = () => {
     setSlots(baseSlots);
   }, [match?.id, match?.convocations, formation]);
 
+  if (matchesLoading) {
+    return (
+      <Layout title="Cargando partido..." showBack backTo={isReadOnly ? "/jugador" : "/dt"}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
   if (!match) return <NotFound />;
 
   const confirmed = match.convocations.filter(c => c.status === 'confirmado').length;
@@ -349,6 +357,16 @@ const PartidoDetalle = () => {
     
     addNotice(title, message, 'dt', 'convocatoria');
     toast.success('¡Convocatoria publicada en el Muro de Avisos!');
+  };
+
+  const handleConvokeAllConfirmed = async () => {
+    if (!match || isPast) return;
+    try {
+      await setSelectionForAllConfirmed(match.id, true);
+      toast.success('¡Todos los jugadores confirmados han sido convocados!');
+    } catch (error) {
+      toast.error('Error al convocar a todos');
+    }
   };
 
   const handleDropOnPitch = async (playerId: string, x: number, y: number) => {
@@ -495,6 +513,7 @@ const PartidoDetalle = () => {
                     type="text"
                     value={editRival}
                     onChange={(e) => setEditRival(e.target.value)}
+                    maxLength={30}
                     className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>
@@ -513,6 +532,7 @@ const PartidoDetalle = () => {
                     type="text"
                     value={editVenue}
                     onChange={(e) => setEditVenue(e.target.value)}
+                    maxLength={50}
                     className="w-full h-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold px-4 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800"
                   />
                 </div>
@@ -788,12 +808,20 @@ const PartidoDetalle = () => {
                     <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{filteredConvocations.length} JUGADORES</span>
                   </div>
                   {!isReadOnly && !isPast && (
-                    <button
-                      onClick={handlePublishSquadList}
-                      className="bg-slate-900 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-slate-900"
-                    >
-                      <span>Publicar Convocatoria</span>
-                    </button>
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <button
+                        onClick={handleConvokeAllConfirmed}
+                        className="bg-emerald-600 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-emerald-600"
+                      >
+                        <span>Convocar a Todos</span>
+                      </button>
+                      <button
+                        onClick={handlePublishSquadList}
+                        className="bg-slate-900 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-slate-900"
+                      >
+                        <span>Publicar Convocatoria</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
