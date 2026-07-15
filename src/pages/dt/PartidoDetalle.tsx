@@ -148,7 +148,7 @@ const PartidoDetalle = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { matches, loading: matchesLoading, respondConvocation, removeConvocation, setSelectionForMatch, updatePlayerPitchPosition, updateMatch, deleteMatch } = useMatches();
+  const { matches, loading: matchesLoading, respondConvocation, removeConvocation, setSelectionForMatch, setSelectionForAllConfirmed, updatePlayerPitchPosition, updateMatch, deleteMatch } = useMatches();
   const { players } = usePlayers();
   const { addNotice } = useNotices();
 
@@ -359,6 +359,16 @@ const PartidoDetalle = () => {
     
     addNotice(title, message, 'dt', 'convocatoria');
     toast.success('¡Convocatoria publicada en el Muro de Avisos!');
+  };
+
+  const handleConvokeAllConfirmed = async () => {
+    if (!match || isPast) return;
+    try {
+      await setSelectionForAllConfirmed(match.id, true);
+      toast.success('¡Todos los jugadores confirmados han sido convocados!');
+    } catch (error) {
+      toast.error('Error al convocar a todos');
+    }
   };
 
   const handleDropOnPitch = async (playerId: string, x: number, y: number) => {
@@ -800,12 +810,20 @@ const PartidoDetalle = () => {
                     <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{filteredConvocations.length} JUGADORES</span>
                   </div>
                   {!isReadOnly && !isPast && (
-                    <button
-                      onClick={handlePublishSquadList}
-                      className="bg-slate-900 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-slate-900"
-                    >
-                      <span>Publicar Convocatoria</span>
-                    </button>
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <button
+                        onClick={handlePublishSquadList}
+                        className="bg-slate-900 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-slate-900"
+                      >
+                        <span>Publicar Convocatoria</span>
+                      </button>
+                      <button
+                        onClick={handleConvokeAllConfirmed}
+                        className="bg-emerald-600 text-white px-4 h-9 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-emerald-600"
+                      >
+                        <span>Convocar a Todos</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
